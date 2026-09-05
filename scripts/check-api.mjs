@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
+const origin=process.argv[2]||'http://localhost:3000';
+assert.ok(['localhost','127.0.0.1','[::1]'].includes(new URL(origin).hostname),'Run only against the local development database.');
+const id=crypto.randomUUID(),secondId=crypto.randomUUID();
+writeFileSync('.wrangler/qa-record-ids.json',JSON.stringify([id,secondId]));
+const record={id,code:' QA-API ',age:'',notes:' API test ',answers:{onset:{status:'selected',selected:['onset-infancy']}},status:'draft',updatedAt:'',modelVersion:'demo-0.1',patient:{lastName:'Тестовый',firstName:'Пациент API',middleName:'',birthDate:'2022-04-12',sex:'male',recordNumber:'QA-API'},visit:{date:'2026-09-05',type:'initial',clinician:'Тестовый врач',specialty:'Педиатр',clinic:'Тестовая клиника',diagnosis:'Тестовая запись'}};
+const post=async(payload,extra={})=>fetch(origin+'/api/assessments',{method:'POST',headers:{'Content-Type':'application/json',...extra},body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)});
+let response=await post(record);assert.equal(response.status,200);const saved=(await response.json()).assessment;assert.equal(saved.code,'QA-API');assert.equal(saved.notes,'API test');assert.equal(saved.age,'4');assert.ok(saved.updatedAt);
+response=await post({...saved,answers:{onset:{status:'selected',selected:['onset-adulthood']}},status:'complete'});assert.equal(response.status,200);
+response=await post({...record,id:secondId,code:'QA-API-SECOND'});assert.equal(response.status,200);
+response=await post({...record,answers:{onset:{status:'selected',selected:['unknown-criterion']}}});assert.equal(response.status,400);
+response=await post(record,{Origin:'https://untrusted.example'});assert.equal(response.status,403);
+response=await fetch(origin+'/api/assessments',{headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});assert.equal(response.status,200);const items=(await response.json()).assessments;
+assert.equal(items.filter(r=>r.id===id).length,1);const updated=items.find(r=>r.id===id);assert.equal(updated.status,'complete');assert.deepEqual(updated.answers.onset.selected,['onset-adulthood']);assert.equal(updated.patient.birthDate,'2022-04-12');assert.ok(items.some(r=>r.id===secondId));
+console.log('API PASS: save, normalized fields, calculated age, update, independent IDs, invalid payload rejection, cross-origin rejection, persistent readback.');

@@ -1,0 +1,226 @@
+{
+  "categories": [
+    {
+      "id": "onset",
+      "title": "Возраст дебюта симптомов",
+      "description": "Укажите возраст появления первых проявлений. Веса используются только для демонстрации интерфейса.",
+      "mode": "single",
+      "sourceIds": ["nhs-red-flags", "acmg-2021"],
+      "criteria": [
+        {
+          "id": "onset-congenital",
+          "label": "С рождения",
+          "description": "Признаки выявлены внутриутробно или присутствовали при рождении.",
+          "points": 10
+        },
+        {
+          "id": "onset-infancy",
+          "label": "На первом году жизни",
+          "description": "Первые симптомы появились после рождения, до 12 месяцев.",
+          "points": 8
+        },
+        {
+          "id": "onset-childhood",
+          "label": "В детстве",
+          "description": "Первые симптомы появились с 1 года до 18 лет.",
+          "points": 5
+        },
+        {
+          "id": "onset-adulthood",
+          "label": "Во взрослом возрасте",
+          "description": "Первые симптомы появились в возрасте 18 лет или старше. Взрослый дебют не исключает генетическую причину.",
+          "points": 0
+        }
+      ]
+    },
+    {
+      "id": "family",
+      "title": "Семейный анамнез",
+      "description": "Отметьте известные семейные особенности. Вклад категории равен наибольшему весу выбранного признака.",
+      "mode": "multi",
+      "sourceIds": ["nhs-red-flags", "rch-metabolic"],
+      "criteria": [
+        {
+          "id": "family-similar",
+          "label": "Сходные проявления у родственников",
+          "description": "У биологических родственников отмечаются сходные симптомы или клиническая картина.",
+          "points": 10
+        },
+        {
+          "id": "family-confirmed",
+          "label": "Наследственное заболевание в семье",
+          "description": "У биологического родственника документально подтверждено наследственное заболевание.",
+          "points": 20
+        },
+        {
+          "id": "family-early-death",
+          "label": "Необъяснимые ранние смерти",
+          "description": "В семейном анамнезе есть необъяснимые младенческие или детские смерти, особенно при сходных обстоятельствах.",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "id": "consanguinity",
+      "title": "Кровнородственный брак",
+      "description": "Учитывается кровное родство биологических родителей пациента.",
+      "mode": "single",
+      "sourceIds": ["rch-metabolic"],
+      "criteria": [
+        {
+          "id": "consanguinity-present",
+          "label": "Родители состоят в кровном родстве",
+          "description": "У биологических родителей есть известный общий предок. При возможности уточните степень родства в примечании.",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "id": "multisystem",
+      "title": "Мультисистемность поражения",
+      "description": "Считайте разные системы органов, а не число симптомов в одной системе.",
+      "mode": "single",
+      "sourceIds": ["nhs-red-flags", "rch-metabolic"],
+      "criteria": [
+        {
+          "id": "multisystem-two",
+          "label": "Поражение двух систем органов",
+          "description": "Клинически значимые проявления в двух системах, не объяснённые одним известным приобретённым заболеванием.",
+          "points": 10
+        },
+        {
+          "id": "multisystem-three",
+          "label": "Поражение трёх и более систем",
+          "description": "Клинически значимые проявления в трёх или более системах, например нервной, сердечно-сосудистой и почечной.",
+          "points": 15
+        }
+      ]
+    },
+    {
+      "id": "dysmorphology",
+      "title": "Дизморфология",
+      "description": "Оцените сочетание особенностей строения и врождённых аномалий. Учитывается наибольший выбранный вес.",
+      "mode": "multi",
+      "sourceIds": ["nhs-red-flags", "acmg-2021"],
+      "criteria": [
+        {
+          "id": "dysmorphology-minor",
+          "label": "Сочетание малых аномалий развития",
+          "description": "Несколько особенностей строения образуют необычный паттерн; изолированная особенность часто является вариантом нормы.",
+          "points": 5
+        },
+        {
+          "id": "dysmorphology-congenital",
+          "label": "Врождённые аномалии с необычным фенотипом",
+          "description": "Пороки развития сочетаются с характерными особенностями внешности или строения тела.",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "id": "neurodevelopment",
+      "title": "Нейроразвитие и регресс",
+      "description": "Учитывайте приобретение навыков и утрату уже сформированных функций. При выборе обоих признаков их веса не суммируются.",
+      "mode": "multi",
+      "sourceIds": ["acmg-2021", "tide-2014", "rch-metabolic"],
+      "criteria": [
+        {
+          "id": "neurodevelopment-delay",
+          "label": "Задержка нейроразвития",
+          "description": "Необъяснимое отставание в приобретении двигательных, речевых или когнитивных навыков.",
+          "points": 10
+        },
+        {
+          "id": "neurodevelopment-regression",
+          "label": "Утрата приобретённых навыков",
+          "description": "Регресс ранее сформированных двигательных, речевых или когнитивных функций.",
+          "points": 15,
+          "urgent": "Регресс — отдельный повод для клинической оценки независимо от демо-индекса. При подозрении на метаболическое заболевание требуется срочное обсуждение с профильной командой. Источник: https://www.rch.org.au/clinicalguide/guideline_index/Metabolic_Disorders/"
+        }
+      ]
+    },
+    {
+      "id": "treatment",
+      "title": "Резистентность к лечению",
+      "description": "Неспецифичный контекстный признак. Сам по себе не подтверждает генетическую этиологию.",
+      "mode": "single",
+      "sourceIds": ["mpse-study", "rch-metabolic"],
+      "criteria": [
+        {
+          "id": "treatment-poor-response",
+          "label": "Необычно слабый ответ на адекватную терапию",
+          "description": "Ожидаемый эффект отсутствует после проверки рабочего диагноза, схемы лечения и приверженности. Клиническое значение зависит от конкретного заболевания.",
+          "points": 5
+        }
+      ]
+    },
+    {
+      "id": "laboratory",
+      "title": "Лабораторные red flags",
+      "description": "Отмечайте подтверждённые отклонения с учётом клинического контекста и качества образца. Учитывается наибольший выбранный вес.",
+      "mode": "multi",
+      "sourceIds": ["rch-metabolic", "tide-2014"],
+      "criteria": [
+        {
+          "id": "laboratory-acidosis",
+          "label": "Необъяснимый ацидоз или повышенный лактат",
+          "description": "Метаболический ацидоз или повышение лактата, которые требуют объяснения после оценки состояния пациента и преаналитических факторов.",
+          "points": 10
+        },
+        {
+          "id": "laboratory-hypoglycaemia",
+          "label": "Повторная необъяснимая гипогликемия",
+          "description": "Повторные подтверждённые эпизоды снижения глюкозы, не объяснённые установленной причиной.",
+          "points": 10
+        },
+        {
+          "id": "laboratory-hyperammonaemia",
+          "label": "Гипераммониемия",
+          "description": "Подтверждённое повышение аммиака с учётом возрастных норм и правил взятия и транспортировки образца.",
+          "points": 15,
+          "urgent": "Гипераммониемия — неотложное состояние: требуется срочная клиническая оценка и связь с профильной командой. Итоговый индекс не определяет неотложность помощи. Источник: https://www.rch.org.au/clinicalguide/guideline_index/Metabolic_Disorders/"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "nhs-red-flags",
+      "title": "Rare disease red flags",
+      "organization": "NHS Genomics Education Programme",
+      "url": "https://www.genomicseducation.hee.nhs.uk/genotes/knowledge-hub/rare-disease-red-flags/",
+      "description": "Признаки для распознавания возможной редкой или генетической причины: семейный анамнез, необычный дебют, врождённые особенности, нейроразвитие, лабораторные отклонения и мультисистемность. Не валидирует веса GenCompass."
+    },
+    {
+      "id": "acmg-2021",
+      "title": "Exome and genome sequencing for pediatric patients with congenital anomalies or intellectual disability: an evidence-based clinical guideline",
+      "organization": "American College of Medical Genetics and Genomics",
+      "year": 2021,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34211152/",
+      "description": "Manickam et al. Рекомендация рассматривать экзомное или геномное секвенирование при врождённых аномалиях, задержке развития и интеллектуальных нарушениях у детей. Не описывает суммарный скрининговый индекс GenCompass."
+    },
+    {
+      "id": "tide-2014",
+      "title": "Early identification of treatable inborn errors of metabolism in children with intellectual disability: The TIDE protocol in British Columbia",
+      "organization": "Van Karnebeek & Stockler-Ipsiroglu; TIDE-BC",
+      "year": 2014,
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25414581/",
+      "description": "Двухэтапный диагностический протокол для выявления поддающихся лечению метаболических причин интеллектуальных нарушений. Источник клинического контекста, а не весов или порогов демомодели."
+    },
+    {
+      "id": "rch-metabolic",
+      "title": "Clinical Practice Guidelines: Metabolic disorders",
+      "organization": "The Royal Children's Hospital Melbourne",
+      "year": 2022,
+      "url": "https://www.rch.org.au/clinicalguide/guideline_index/Metabolic_Disorders/",
+      "description": "Клинические и лабораторные признаки возможного метаболического заболевания, включая регресс, кровное родство, семейные случаи и гипераммониемию. Содержит рекомендации по срочной оценке при подозрении на метаболическое заболевание."
+    },
+    {
+      "id": "mpse-study",
+      "title": "A machine learning decision support tool optimizes WGS utilization in a neonatal intensive care unit",
+      "organization": "Исследовательская публикация; PubMed Central",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11782664/",
+      "description": "MPSE использует фенотипы HPO и машинное обучение для приоритизации геномного исследования в NICU. Эта модель отличается от демонстрационного чеклиста GenCompass; её показатели нельзя переносить на него."
+    }
+  ]
+}
