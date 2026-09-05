@@ -9,25 +9,22 @@ import {
   useState,
 } from 'react';
 import { flushSync } from 'react-dom';
+import { ArrowRight, Save } from 'lucide-react';
+import { Button } from '@astryxdesign/core/Button';
+import { Banner } from '@astryxdesign/core/Banner';
+import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
+import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout';
+import { Grid } from '@astryxdesign/core/Grid';
+import { VStack } from '@astryxdesign/core/VStack';
+import { HStack } from '@astryxdesign/core/HStack';
+import { Text } from '@astryxdesign/core/Text';
+import { TextArea } from '@astryxdesign/core/TextArea';
+import { useToast } from '@astryxdesign/core/Toast';
 import {
-  ArrowRight,
-  Check,
-  ChevronRight,
-  Clock3,
-  Info,
-  LoaderCircle,
-  Save,
-  ShieldCheck,
-  X,
-} from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  PageHeading,
+  WorkflowSteps,
+  ClinicalNote,
+} from '@/components/workflow-ui';
 import { AppShell, type View } from '@/components/app-shell';
 import {
   PatientContext,
@@ -198,11 +195,11 @@ export default function Home() {
     window.addEventListener('beforeunload', leave);
     return () => window.removeEventListener('beforeunload', leave);
   }, [dirty, backupDirty]);
-  useEffect(() => {
-    if (!notice) return;
-    const t = setTimeout(() => setNotice(''), 6000);
-    return () => clearTimeout(t);
-  }, [notice]);
+  const clearNotice = useCallback(
+    (expected: string) =>
+      setNotice((current) => (current === expected ? '' : current)),
+    [],
+  );
   const update = (next: Assessment) => {
     setRecord({ ...next, status: 'draft' });
     setError('');
@@ -365,129 +362,115 @@ export default function Home() {
           else go(v);
         }}
       >
-        {notice && (
-          <output className="toast-message">
-            <Check size={17} />
-            <span>{notice}</span>
-            <button
-              aria-label="Закрыть уведомление"
-              onClick={() => setNotice('')}
-            >
-              <X size={15} />
-            </button>
-          </output>
-        )}
+        <NoticeToast message={notice} onClear={clearNotice} />
         {error && (
-          <div className="save-error" role="alert">
-            <Info size={18} />
-            <span>{error}</span>
-            <button aria-label="Закрыть ошибку" onClick={() => setError('')}>
-              <X size={16} />
-            </button>
-          </div>
+          <Banner
+            status="error"
+            title={error}
+            isDismissable
+            onDismiss={() => setError('')}
+            dismissLabel="Закрыть ошибку"
+            collapsible={false}
+          />
         )}
         {view === 'assessment' && (
           <>
-            <div className="page-heading">
-              <div>
-                <div className="eyebrow">ОТ ПРИЗНАКОВ К РЕШЕНИЮ</div>
-                <h1>
-                  {record.updatedAt && record.code
-                    ? 'Уточнение оценки'
-                    : 'Новая оценка'}
-                </h1>
-                <p>
-                  Оцените клинические признаки, чтобы обосновать консультацию
-                  генетика.
-                </p>
-              </div>
-              <div className="save-area">
-                <button
-                  className="button secondary"
-                  onClick={() => void save('draft')}
-                  disabled={saving || !ready}
-                >
-                  {saving ? (
-                    <LoaderCircle size={16} className="spinning" />
-                  ) : (
-                    <Save size={16} />
-                  )}
-                  Сохранить черновик
-                </button>
-                <small>
-                  {dirty
-                    ? 'Есть несохранённые изменения'
-                    : record.updatedAt && record.code
-                      ? 'Сохранено в истории'
-                      : 'Можно заполнить частично'}
-                </small>
-              </div>
-            </div>
-            <div className="workflow">
-              <div className="step current">
-                <span>01</span>Клинические признаки
-              </div>
-              <ChevronRight size={15} />
-              <div className="step">
-                <span>02</span>Результат и обоснование
-              </div>
-              <ChevronRight size={15} />
-              <div className="step">
-                <span>03</span>Направление
-              </div>
-              <div className="time-estimate">
-                <Clock3 size={15} />
-                3–5 минут
-              </div>
-            </div>
-            <fieldset className="assessment-grid" disabled={saving || !ready}>
-              <div>
-                <PatientContext record={record} onChange={update} />
-                <CriteriaForm record={record} onChange={update} />
-                <section className="case-notes panel">
-                  <label htmlFor="case-notes">
-                    Примечание к случаю <span>Необязательно</span>
-                  </label>
-                  <textarea
-                    id="case-notes"
-                    value={record.notes}
-                    onChange={(e) =>
-                      update({ ...record, notes: e.target.value })
-                    }
-                    maxLength={2000}
-                    placeholder="Жалобы, анамнез и дополнительные клинические сведения…"
-                    rows={3}
+            <PageHeading
+              title={
+                record.updatedAt && record.code
+                  ? 'Уточнение оценки'
+                  : 'Новая оценка'
+              }
+              description="Оцените клинические признаки, чтобы обосновать консультацию генетика."
+              actions={
+                <VStack gap={2}>
+                  <Button
+                    label="Сохранить черновик"
+                    icon={<Save className="size-4" />}
+                    onClick={() => void save('draft')}
+                    isDisabled={saving || !ready}
+                    isLoading={saving}
+                    size="lg"
                   />
-                  <small>
-                    Дополнительные сведения будут включены в результат и
-                    направление.
-                  </small>
-                </section>
-                <div className="assessment-actions">
-                  <span>{r.known} из 8 категорий с известными данными</span>
-                  <button
-                    className="button primary"
+                  <Text type="supporting">
+                    {dirty
+                      ? 'Есть несохранённые изменения'
+                      : record.updatedAt && record.code
+                        ? 'Сохранено в истории'
+                        : 'Можно заполнить частично'}
+                  </Text>
+                </VStack>
+              }
+            />
+            <WorkflowSteps />
+            <VStack className="xl:hidden">
+              <ScoreCard record={record} disabled={saving || !ready} />
+            </VStack>
+            {/* Below xl the score moves above the form, and supporting details follow it.
+              At xl the form and 340px summary rail share the content region. */}
+            <Grid
+              gap={8}
+              className="grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]"
+              align="start"
+            >
+              <VStack gap={8} className="min-w-0" aria-busy={saving}>
+                <PatientContext
+                  record={record}
+                  onChange={update}
+                  disabled={saving || !ready}
+                />
+                <CriteriaForm
+                  record={record}
+                  onChange={update}
+                  disabled={saving || !ready}
+                />
+                <TextArea
+                  label="Примечание к случаю"
+                  isOptional
+                  value={record.notes}
+                  onChange={(notes) =>
+                    update({ ...record, notes: notes.slice(0, 2000) })
+                  }
+                  maxLength={2000}
+                  placeholder="Жалобы, анамнез и дополнительные клинические сведения…"
+                  rows={4}
+                  description="Дополнительные сведения будут включены в результат и направление."
+                  isDisabled={saving || !ready}
+                  width="100%"
+                  size="lg"
+                />
+                <HStack justify="between" gap={4} wrap="wrap">
+                  <Text color="secondary">
+                    {r.known} из 8 категорий с известными данными
+                  </Text>
+                  <Button
+                    label="Посмотреть результат"
+                    variant="primary"
+                    size="lg"
+                    endContent={<ArrowRight className="size-4" />}
                     onClick={() => void showResult()}
-                    disabled={!r.hasData || saving}
-                  >
-                    Посмотреть результат
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
-              </div>
-              <aside className="result-column">
-                <ScoreCard record={record} onResult={() => void showResult()} />
+                    isDisabled={!r.hasData || saving || !ready}
+                    isLoading={saving}
+                  />
+                </HStack>
+              </VStack>
+              <VStack
+                as="aside"
+                gap={6}
+                className="min-w-0 xl:sticky xl:top-24"
+              >
+                <VStack className="hidden xl:flex">
+                  <ScoreCard
+                    record={record}
+                    onResult={() => void showResult()}
+                    disabled={saving || !ready}
+                  />
+                </VStack>
                 <UrgentFlags record={record} />
                 <Explainability record={record} />
-                <div className="clinical-note">
-                  <ShieldCheck size={18} />
-                  <p>
-                    Инструмент не ставит диагноз и не заменяет консультацию
-                    генетика.
-                  </p>
-                </div>
-              </aside>
-            </fieldset>
+                <ClinicalNote />
+              </VStack>
+            </Grid>
           </>
         )}
         {view === 'result' && (
@@ -522,58 +505,87 @@ export default function Home() {
           record={record}
           onPrint={print}
         />
-        <AlertDialog
-          open={!!pending}
+        <Dialog
+          isOpen={!!pending}
           onOpenChange={(open) => {
-            if (!open) setPending(null);
+            if (!open && !busyRef.current) setPending(null);
           }}
+          purpose={saving ? 'required' : 'form'}
+          role="alertdialog"
+          aria-label="Сохранить текущую оценку?"
+          aria-describedby="unsaved-description"
+          width={520}
         >
-          <AlertDialogContent className="unsaved-dialog">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Сохранить текущую оценку?</AlertDialogTitle>
-              <AlertDialogDescription>
-                В текущем случае есть изменения. Сохраните их, чтобы вернуться к
-                ним из истории.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <button
-                className="button secondary"
-                onClick={() => setPending(null)}
-                disabled={saving}
-              >
-                Остаться
-              </button>
-              <button
-                className="text-button"
-                onClick={() => pending?.()}
-                disabled={saving}
-              >
-                Не сохранять
-              </button>
-              <button
-                className="button primary"
-                disabled={saving}
-                onClick={async () => {
-                  const next = pending;
-                  if (next && (await save('draft'))) next();
-                }}
-              >
-                {saving ? 'Сохраняем…' : 'Сохранить'}
-              </button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <Layout
+            height="auto"
+            padding={6}
+            header={<DialogHeader title="Сохранить текущую оценку?" />}
+            content={
+              <LayoutContent>
+                <Text id="unsaved-description">
+                  В текущем случае есть изменения. Сохраните их, чтобы вернуться
+                  к ним из истории.
+                </Text>
+              </LayoutContent>
+            }
+            footer={
+              <LayoutFooter>
+                <HStack gap={3} justify="end" wrap="wrap">
+                  <Button
+                    label="Остаться"
+                    onClick={() => setPending(null)}
+                    isDisabled={saving}
+                    data-autofocus
+                  />
+                  <Button
+                    label="Не сохранять"
+                    variant="ghost"
+                    onClick={() => pending?.()}
+                    isDisabled={saving}
+                  />
+                  <Button
+                    label="Сохранить"
+                    variant="primary"
+                    isLoading={saving}
+                    onClick={async () => {
+                      const next = pending;
+                      if (next && (await save('draft'))) next();
+                    }}
+                  />
+                </HStack>
+              </LayoutFooter>
+            }
+          />
+        </Dialog>
       </AppShell>
-      <div id="print-output" className="print-view">
-        <div className="print-brand">
-          GenCompass <span>LUMEN GENOMICS</span>
-        </div>
+      <section id="print-output" className="print-view">
+        <header className="print-brand">GenCompass · LUMEN GENOMICS</header>
         <pre>{printContent}</pre>
-      </div>
+      </section>
     </>
   );
 }
+
+function NoticeToast({
+  message,
+  onClear,
+}: {
+  message: string;
+  onClear: (expected: string) => void;
+}) {
+  const showToast = useToast();
+  useEffect(() => {
+    if (message)
+      showToast({
+        body: message,
+        autoHideDuration: 6000,
+        uniqueID: 'gencompass-notice',
+        onHide: () => onClear(message),
+      });
+  }, [message, onClear, showToast]);
+  return null;
+}
+
 function historyReplace(view: View) {
   if (location.hash !== '#' + view)
     window.history.pushState(null, '', '#' + view);

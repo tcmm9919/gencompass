@@ -1,113 +1,39 @@
 'use client';
+import { useState, type ReactNode } from 'react';
 import {
   BookOpen,
-  ChevronRight,
   Code2,
   Compass,
   FileClock,
+  Moon,
   Plus,
   ShieldCheck,
-  Stethoscope,
+  Sun,
   WandSparkles,
 } from 'lucide-react';
+import { AppShell as AstryxAppShell } from '@astryxdesign/core/AppShell';
 import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarTrigger,
-  useSidebar,
-} from '@/components/ui/sidebar';
+  SideNav,
+  SideNavHeading,
+  SideNavItem,
+  SideNavSection,
+} from '@astryxdesign/core/SideNav';
+import { Theme } from '@astryxdesign/core/theme';
+import { neutralTheme } from '@astryxdesign/theme-neutral/built';
+import { InternationalizationProvider } from '@astryxdesign/core/i18n';
+import ru from '@astryxdesign/core/locales/ru-RU.json';
+import { Button } from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
+import { LayerProvider } from '@astryxdesign/core/Layer';
+import { Section } from '@astryxdesign/core/Section';
+import { VStack } from '@astryxdesign/core/VStack';
+import { HStack } from '@astryxdesign/core/HStack';
+import { Text } from '@astryxdesign/core/Text';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { browserStorageMode } from '@/lib/persistence';
+
 export type View = 'assessment' | 'result' | 'history' | 'methodology';
-const names = {
-  assessment: 'Новая оценка',
-  result: 'Результат оценки',
-  history: 'История оценок',
-  methodology: 'Методология',
-};
-function Navigation({
-  view,
-  onNavigate,
-}: {
-  view: View;
-  onNavigate: (v: View) => void;
-}) {
-  const { setOpenMobile } = useSidebar();
-  return (
-    <nav aria-label="Основная навигация">
-      {(
-        [
-          { id: 'assessment', label: 'Новая оценка', Icon: Plus },
-          { id: 'history', label: 'История оценок', Icon: FileClock },
-          { id: 'methodology', label: 'Методология', Icon: BookOpen },
-        ] as const
-      ).map(({ id, label, Icon }) => (
-        <button
-          key={id}
-          className={
-            'nav-item ' +
-            (view === id || (view === 'result' && id === 'assessment')
-              ? 'active'
-              : '')
-          }
-          aria-current={view === id ? 'page' : undefined}
-          onClick={() => {
-            onNavigate(id);
-            setOpenMobile(false);
-          }}
-        >
-          <Icon size={18} />
-          {label}
-        </button>
-      ))}
-    </nav>
-  );
-}
-function DeveloperTools({
-  onFill,
-  onRestore,
-  disabled,
-}: {
-  onFill: () => void;
-  onRestore?: () => void;
-  disabled: boolean;
-}) {
-  const { setOpenMobile } = useSidebar();
-  return (
-    <section className="developer-tools" aria-label="Dev tools">
-      <div className="developer-tools-title">
-        <Code2 size={16} />
-        Dev tools
-      </div>
-      <p>Тестовые данные · все вопросы</p>
-      <button
-        className="button secondary"
-        disabled={disabled}
-        onClick={() => {
-          onFill();
-          setOpenMobile(false);
-        }}
-      >
-        <WandSparkles size={16} />
-        Заполнить всё
-      </button>
-      {onRestore && (
-        <button
-          className="developer-tools-restore"
-          disabled={disabled}
-          onClick={() => {
-            onRestore();
-            setOpenMobile(false);
-          }}
-        >
-          Вернуть форму
-        </button>
-      )}
-    </section>
-  );
-}
+
 export function AppShell({
   children,
   view,
@@ -116,79 +42,164 @@ export function AppShell({
   onRestorePreview,
   previewDisabled,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   view: View;
   onNavigate: (v: View) => void;
   onFillPreview: () => void;
   onRestorePreview?: () => void;
   previewDisabled: boolean;
 }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const closeAndRun = (action: () => void) => {
+    action();
+    setMobileOpen(false);
+  };
   return (
-    <SidebarProvider
-      style={{ '--sidebar-width': '232px' } as React.CSSProperties}
-    >
-      <a className="skip-link" href="#main-content">
-        К содержимому
-      </a>
-      <Sidebar className="app-sidebar">
-        <SidebarHeader>
-          <div className="brand">
-            <Compass size={32} strokeWidth={1.7} />
-            <div>
-              GenCompass<small>КЛИНИЧЕСКИЙ СКРИНИНГ</small>
-            </div>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <div className="nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</div>
-          <Navigation view={view} onNavigate={onNavigate} />
-          <DeveloperTools
-            onFill={onFillPreview}
-            onRestore={onRestorePreview}
-            disabled={previewDisabled}
-          />
-          <div className="sidebar-note">
-            <ShieldCheck size={21} />
-            <p>
-              От клинических признаков
-              <br />к обоснованному решению
-            </p>
-          </div>
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="version">
-            GenCompass <span>v0.1 · прототип</span>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-      <div className="app-main">
-        <header className="topbar">
-          <div className="breadcrumbs">
-            <SidebarTrigger className="mobile-trigger" />
-            <span>Рабочее пространство</span>
-            <ChevronRight size={14} />
-            <strong>{names[view]}</strong>
-          </div>
-          <div className="topbar-right">
-            <span className="demo-badge">
-              <span />
-              {browserStorageMode
-                ? 'Демо · данные в браузере'
-                : 'Демонстрационный режим'}
-            </span>
-            <div className="avatar">
-              <Stethoscope size={19} />
-            </div>
-          </div>
-        </header>
-        <main id="main-content" className="workspace">
-          {children}
-          <footer className="workspace-footer">
-            <span>GenCompass · Lumen Genomics</span>
-            <span>Для специалистов здравоохранения</span>
-          </footer>
-        </main>
-      </div>
-    </SidebarProvider>
+    <InternationalizationProvider locale="ru-RU" messages={{ 'ru-RU': ru }}>
+      <Theme theme={neutralTheme} mode={mode}>
+        <LayerProvider>
+          <AstryxAppShell
+            className="[&_.astryx-app-shell-header]:bg-surface"
+            height="auto"
+            variant="section"
+            contentPadding={0}
+            mobileNav={{
+              breakpoint: 'md',
+              isOpen: mobileOpen,
+              onOpenChange: setMobileOpen,
+            }}
+            sideNav={
+              <SideNav
+                header={
+                  <SideNavHeading
+                    icon={<Compass />}
+                    heading="GenCompass"
+                    subheading="Клинический скрининг"
+                  />
+                }
+                footer={
+                  <VStack gap={6} padding={4}>
+                    <VStack gap={3} aria-label="Dev tools">
+                      <HStack gap={2}>
+                        <Code2 className="size-4" />
+                        <Text weight="semibold">Dev tools</Text>
+                      </HStack>
+                      <Text color="secondary">
+                        Тестовые данные · все вопросы
+                      </Text>
+                      <Button
+                        label="Заполнить всё"
+                        icon={<WandSparkles className="size-4" />}
+                        isDisabled={previewDisabled}
+                        onClick={() => closeAndRun(onFillPreview)}
+                      />
+                      {onRestorePreview && (
+                        <Button
+                          label="Вернуть форму"
+                          variant="ghost"
+                          isDisabled={previewDisabled}
+                          onClick={() => closeAndRun(onRestorePreview)}
+                        />
+                      )}
+                    </VStack>
+                    <VStack gap={2}>
+                      <HStack gap={2}>
+                        <StatusDot
+                          variant="neutral"
+                          label="Демонстрационный режим"
+                        />
+                        <Text type="supporting">
+                          {browserStorageMode
+                            ? 'Демо · данные в браузере'
+                            : 'Демонстрационный режим'}
+                        </Text>
+                      </HStack>
+                      <Text type="supporting">GenCompass · v0.1</Text>
+                    </VStack>
+                  </VStack>
+                }
+                footerIcons={
+                  <IconButton
+                    label={
+                      mode === 'light'
+                        ? 'Включить тёмную тему'
+                        : 'Включить светлую тему'
+                    }
+                    tooltip={
+                      mode === 'light'
+                        ? 'Включить тёмную тему'
+                        : 'Включить светлую тему'
+                    }
+                    icon={
+                      mode === 'light' ? (
+                        <Moon className="size-4" />
+                      ) : (
+                        <Sun className="size-4" />
+                      )
+                    }
+                    variant="ghost"
+                    onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
+                  />
+                }
+              >
+                <SideNavSection title="Рабочее пространство">
+                  {(
+                    [
+                      { id: 'assessment', label: 'Новая оценка', Icon: Plus },
+                      {
+                        id: 'history',
+                        label: 'История оценок',
+                        Icon: FileClock,
+                      },
+                      {
+                        id: 'methodology',
+                        label: 'Методология',
+                        Icon: BookOpen,
+                      },
+                    ] as const
+                  ).map(({ id, label, Icon }) => (
+                    <SideNavItem
+                      key={id}
+                      label={label}
+                      icon={<Icon />}
+                      isSelected={
+                        view === id ||
+                        (view === 'result' && id === 'assessment')
+                      }
+                      isDisabled={previewDisabled}
+                      onClick={() => closeAndRun(() => onNavigate(id))}
+                    />
+                  ))}
+                </SideNavSection>
+              </SideNav>
+            }
+          >
+            <VStack
+              id="main-content"
+              tabIndex={-1}
+              gap={6}
+              className="min-w-0 w-full mx-auto px-4 py-6 md:px-8 md:py-8"
+              maxWidth={1440}
+            >
+              {children}
+              <Section dividers={['top']} paddingBlock={5} paddingInline={0}>
+                <HStack gap={3} wrap="wrap" justify="between">
+                  <Text type="supporting">
+                    GenCompass · Для специалистов здравоохранения
+                  </Text>
+                  <HStack gap={2}>
+                    <ShieldCheck className="size-4 text-secondary" />
+                    <Text type="supporting">
+                      Поддержка клинического решения
+                    </Text>
+                  </HStack>
+                </HStack>
+              </Section>
+            </VStack>
+          </AstryxAppShell>
+        </LayerProvider>
+      </Theme>
+    </InternationalizationProvider>
   );
 }

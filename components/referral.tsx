@@ -1,16 +1,18 @@
 'use client';
-import { Copy, Download, Printer, X } from 'lucide-react';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { reportText, downloadText } from '@/lib/report';
-import { type Assessment } from '@/lib/model';
 import { useState } from 'react';
+import { Copy, Download, Printer } from 'lucide-react';
+import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
+import { Layout, LayoutContent, LayoutFooter } from '@astryxdesign/core/Layout';
+import { VStack } from '@astryxdesign/core/VStack';
+import { HStack } from '@astryxdesign/core/HStack';
+import { Section } from '@astryxdesign/core/Section';
+import { TextArea } from '@astryxdesign/core/TextArea';
+import { Text } from '@astryxdesign/core/Text';
+import { Button } from '@astryxdesign/core/Button';
+import { Banner } from '@astryxdesign/core/Banner';
+import { reportText, downloadText } from '@/lib/report';
+import type { Assessment } from '@/lib/model';
+
 export function ReferralDialog({
   open,
   onOpenChange,
@@ -39,61 +41,84 @@ export function ReferralDialog({
     }
   };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="referral-dialog" showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>Направление к генетику</DialogTitle>
-          <DialogDescription>
-            Учебный шаблон на основе оценки. Документ не отправляется
-            автоматически.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogClose className="dialog-x" aria-label="Закрыть">
-          <X size={19} />
-        </DialogClose>
-        <label className="referral-comment">
-          Дополнение врача
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Дополнительные вопросы для консультации…"
-            maxLength={1500}
-            rows={3}
+    <Dialog
+      isOpen={open}
+      onOpenChange={onOpenChange}
+      purpose="form"
+      width={760}
+      maxHeight="90dvh"
+      aria-label="Направление к генетику"
+    >
+      <Layout
+        height="fill"
+        padding={6}
+        header={
+          <DialogHeader
+            title="Направление к генетику"
+            subtitle="Учебный шаблон на основе оценки. Документ не отправляется автоматически."
+            onOpenChange={onOpenChange}
           />
-        </label>
-        <div className="referral-preview">
-          <pre>{text}</pre>
-        </div>
-        {error && (
-          <p className="inline-error" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="dialog-actions">
-          <button className="button secondary" onClick={copy}>
-            <Copy size={16} />
-            {copied ? 'Скопировано' : 'Копировать'}
-          </button>
-          <button
-            className="button secondary"
-            onClick={() =>
-              downloadText(
-                text,
-                'GenCompass-' +
-                  (record.code || 'referral') +
-                  '-направление.txt',
-              )
-            }
-          >
-            <Download size={16} />
-            Скачать TXT
-          </button>
-          <button className="button primary" onClick={() => onPrint(text)}>
-            <Printer size={16} />
-            Печать / PDF
-          </button>
-        </div>
-      </DialogContent>
+        }
+        content={
+          <LayoutContent isScrollable>
+            <VStack gap={5}>
+              <TextArea
+                label="Дополнение врача"
+                value={comment}
+                onChange={(value) => {
+                  setComment(value.slice(0, 1500));
+                  setCopied(false);
+                }}
+                placeholder="Дополнительные вопросы для консультации…"
+                maxLength={1500}
+                rows={3}
+                width="100%"
+              />
+              <Section variant="muted" padding={5}>
+                <Text
+                  as="p"
+                  className="whitespace-pre-wrap break-words"
+                  data-testid="referral-preview"
+                >
+                  {text}
+                </Text>
+              </Section>
+              {error && (
+                <Banner status="error" title={error} collapsible={false} />
+              )}
+            </VStack>
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter hasDivider>
+            <HStack gap={3} justify="end" wrap="wrap">
+              <Button
+                label={copied ? 'Скопировано' : 'Копировать'}
+                icon={<Copy className="size-4" />}
+                onClick={() => void copy()}
+              />
+              <Button
+                label="Скачать TXT"
+                icon={<Download className="size-4" />}
+                onClick={() =>
+                  downloadText(
+                    text,
+                    'GenCompass-' +
+                      (record.code || 'referral') +
+                      '-направление.txt',
+                  )
+                }
+              />
+              <Button
+                label="Печать / PDF"
+                icon={<Printer className="size-4" />}
+                variant="primary"
+                onClick={() => onPrint(text)}
+              />
+            </HStack>
+          </LayoutFooter>
+        }
+      />
     </Dialog>
   );
 }

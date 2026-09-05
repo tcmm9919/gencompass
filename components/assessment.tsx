@@ -2,7 +2,6 @@
 import {
   BookOpen,
   Check,
-  ChevronDown,
   CircleHelp,
   ClipboardList,
   Compass,
@@ -11,22 +10,33 @@ import {
   Stethoscope,
   UserRound,
 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Button } from '@astryxdesign/core/Button';
+import { IconButton } from '@astryxdesign/core/IconButton';
+import { TextInput } from '@astryxdesign/core/TextInput';
+import { NumberInput } from '@astryxdesign/core/NumberInput';
+import { DateInput } from '@astryxdesign/core/DateInput';
+import type { ISODateString } from '@astryxdesign/core/utils';
+import { Selector } from '@astryxdesign/core/Selector';
+import { RadioList, RadioListItem } from '@astryxdesign/core/RadioList';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from '@/components/ui/tooltip';
-import { Progress } from '@/components/ui/progress';
+  CheckboxList,
+  CheckboxListItem,
+} from '@astryxdesign/core/CheckboxList';
+import { Tooltip } from '@astryxdesign/core/Tooltip';
+import { ProgressBar } from '@astryxdesign/core/ProgressBar';
+import { VStack } from '@astryxdesign/core/VStack';
+import { HStack } from '@astryxdesign/core/HStack';
+import { Grid } from '@astryxdesign/core/Grid';
+import { Section } from '@astryxdesign/core/Section';
+import { Card } from '@astryxdesign/core/Card';
+import { FormLayout } from '@astryxdesign/core/FormLayout';
+import { Heading } from '@astryxdesign/core/Heading';
+import { Text } from '@astryxdesign/core/Text';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
+import { Banner } from '@astryxdesign/core/Banner';
+import { EmptyState } from '@astryxdesign/core/EmptyState';
+import { Collapsible } from '@astryxdesign/core/Collapsible';
+import { Link } from '@astryxdesign/core/Link';
 import {
   categories,
   calculate,
@@ -44,15 +54,30 @@ import {
   type Visit,
 } from '@/lib/patient';
 
+const displayDate = (date: ISODateString) =>
+  date.split('-').reverse().join('.');
+const iso = (date: string) => (date ? (date as ISODateString) : undefined);
+export const riskVariant = (zone: string) =>
+  zone === 'low'
+    ? 'success'
+    : zone === 'moderate'
+      ? 'warning'
+      : zone === 'high'
+        ? 'error'
+        : 'neutral';
+
+type FormProps = {
+  record: Assessment;
+  onChange: (r: Assessment) => void;
+  disabled?: boolean;
+};
+
 export function PatientContext({
   record,
   onChange,
-}: {
-  record: Assessment;
-  onChange: (r: Assessment) => void;
-}) {
-  const patient = record.patient;
-  const visit = record.visit;
+  disabled = false,
+}: FormProps) {
+  const { patient, visit } = record;
   const changePatient = (field: keyof Patient, value: string) => {
     const next = { ...patient, [field]: value };
     const age = next.birthDate
@@ -76,340 +101,339 @@ export function PatientContext({
     });
   };
   return (
-    <>
-      <section className="patient-card panel">
-        <div className="section-title">
-          <UserRound size={18} />
-          <h2>Данные пациента</h2>
-        </div>
-        <div className="patient-fields patient-demographics">
-          <label>
-            Фамилия
-            <input
-              autoComplete="off"
-              placeholder="Введите фамилию"
-              maxLength={80}
-              value={patient.lastName}
-              onChange={(e) => changePatient('lastName', e.target.value)}
-            />
-          </label>
-          <label>
-            Имя
-            <input
-              autoComplete="off"
-              placeholder="Введите имя"
-              maxLength={80}
-              value={patient.firstName}
-              onChange={(e) => changePatient('firstName', e.target.value)}
-            />
-          </label>
-          <label>
-            Отчество
-            <input
-              autoComplete="off"
-              placeholder="При наличии"
-              maxLength={80}
-              value={patient.middleName}
-              onChange={(e) => changePatient('middleName', e.target.value)}
-            />
-          </label>
-          <label>
-            № медицинской карты
-            <input
-              placeholder="Номер карты пациента"
-              maxLength={60}
-              value={patient.recordNumber}
-              onChange={(e) => changePatient('recordNumber', e.target.value)}
-            />
-          </label>
-          <label>
-            Дата рождения
-            <input
-              type="date"
-              min="1906-01-01"
-              max={visit.date || localDate()}
-              value={patient.birthDate}
-              onChange={(e) => changePatient('birthDate', e.target.value)}
-              onInput={(e) => changePatient('birthDate', e.currentTarget.value)}
-            />
-          </label>
-          <div className="field-control">
-            <span id="sex-label">Пол</span>
-            <Select
-              value={patient.sex}
-              onValueChange={(value) =>
-                changePatient('sex', String(value ?? ''))
-              }
-            >
-              <SelectTrigger
-                aria-labelledby="sex-label"
-                className="clinical-select"
-              >
-                <SelectValue>
-                  {
-                    (
-                      {
-                        '': 'Не указан',
-                        female: 'Женский',
-                        male: 'Мужской',
-                        unknown: 'Не определён',
-                      } as Record<string, string>
-                    )[patient.sex]
+    <VStack gap={8}>
+      <Section padding={0} aria-labelledby="patient-heading">
+        <VStack gap={5}>
+          <HStack gap={3}>
+            <UserRound className="size-5 text-secondary" />
+            <Heading level={2} id="patient-heading">
+              Данные пациента
+            </Heading>
+          </HStack>
+          <FormLayout defaultOptionality="optional">
+            <Grid columns={{ minWidth: 220, max: 2 }} gap={5}>
+              {(
+                [
+                  ['lastName', 'Фамилия', 'Введите фамилию', 80],
+                  ['firstName', 'Имя', 'Введите имя', 80],
+                  ['middleName', 'Отчество', 'При наличии', 80],
+                  [
+                    'recordNumber',
+                    '№ медицинской карты',
+                    'Номер карты пациента',
+                    60,
+                  ],
+                ] as const
+              ).map(([key, label, placeholder, limit]) => (
+                <TextInput
+                  key={key}
+                  label={label}
+                  placeholder={placeholder}
+                  value={patient[key]}
+                  onChange={(value) =>
+                    changePatient(key, value.slice(0, limit))
                   }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Не указан</SelectItem>
-                <SelectItem value="female">Женский</SelectItem>
-                <SelectItem value="male">Мужской</SelectItem>
-                <SelectItem value="unknown">Не определён</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <label>
-            Возраст{' '}
-            {patient.birthDate && (
-              <span className="calculated-tag">Рассчитан по дате рождения</span>
-            )}
-            <input
-              readOnly={!!patient.birthDate}
-              type={patient.birthDate ? 'text' : 'number'}
-              min="0"
-              max="120"
-              placeholder="Полных лет"
-              value={
-                patient.birthDate
-                  ? ageLabel(patient.birthDate, visit.date || localDate())
-                  : record.age
-              }
-              onChange={(e) => onChange({ ...record, age: e.target.value })}
-            />
-          </label>
-          <label>
-            Код оценки
-            <input
-              placeholder="Присваивается при сохранении"
-              value={record.code}
-              onChange={(e) => onChange({ ...record, code: e.target.value })}
-              maxLength={40}
-            />
-          </label>
-        </div>
-      </section>
-      <section className="patient-card encounter-card panel">
-        <div className="section-title">
-          <Stethoscope size={18} />
-          <h2>Данные приёма</h2>
-        </div>
-        <div className="patient-fields">
-          <label>
-            Дата оценки
-            <input
-              type="date"
-              max={localDate()}
-              value={visit.date}
-              onChange={(e) => changeVisit('date', e.target.value)}
-              onInput={(e) => changeVisit('date', e.currentTarget.value)}
-            />
-          </label>
-          <div className="field-control">
-            <span id="visit-type-label">Тип приёма</span>
-            <Select
-              value={visit.type}
-              onValueChange={(value) =>
-                changeVisit('type', String(value ?? 'initial'))
-              }
-            >
-              <SelectTrigger
-                aria-labelledby="visit-type-label"
-                className="clinical-select"
-              >
-                <SelectValue>
-                  {visit.type === 'initial' ? 'Первичный' : 'Повторный'}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="initial">Первичный</SelectItem>
-                <SelectItem value="followup">Повторный</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <label>
-            Лечащий врач
-            <input
-              autoComplete="off"
-              placeholder="ФИО врача"
-              maxLength={160}
-              value={visit.clinician}
-              onChange={(e) => changeVisit('clinician', e.target.value)}
-            />
-          </label>
-          <label>
-            Специальность
-            <input
-              placeholder="Например, педиатр"
-              maxLength={100}
-              value={visit.specialty}
-              onChange={(e) => changeVisit('specialty', e.target.value)}
-            />
-          </label>
-          <label className="wide-field">
-            Медицинская организация
-            <input
+                  isDisabled={disabled}
+                  size="lg"
+                  width="100%"
+                />
+              ))}
+              <DateInput
+                format={displayDate}
+                label="Дата рождения"
+                placeholder="дд.мм.гггг"
+                value={iso(patient.birthDate)}
+                min="1906-01-01"
+                max={iso(visit.date || localDate())}
+                onChange={(value) => changePatient('birthDate', value ?? '')}
+                isDisabled={disabled}
+                hasClear
+                size="lg"
+                width="100%"
+              />
+              <Selector
+                label="Пол"
+                value={patient.sex}
+                onChange={(value) => changePatient('sex', value)}
+                options={[
+                  { value: '', label: 'Не указан' },
+                  { value: 'female', label: 'Женский' },
+                  { value: 'male', label: 'Мужской' },
+                  { value: 'unknown', label: 'Не определён' },
+                ]}
+                isDisabled={disabled}
+                size="lg"
+                width="100%"
+              />
+              {patient.birthDate ? (
+                <TextInput
+                  label="Возраст"
+                  description="Рассчитан по дате рождения"
+                  value={ageLabel(patient.birthDate, visit.date || localDate())}
+                  isReadOnly
+                  size="lg"
+                  width="100%"
+                />
+              ) : (
+                <NumberInput
+                  label="Возраст"
+                  placeholder="Полных лет"
+                  value={record.age === '' ? null : Number(record.age)}
+                  onChange={(value) =>
+                    onChange({
+                      ...record,
+                      age: value === null ? '' : String(value),
+                    })
+                  }
+                  min={0}
+                  max={120}
+                  isIntegerOnly
+                  isWheelEnabled={false}
+                  hasClear
+                  isDisabled={disabled}
+                  size="lg"
+                  width="100%"
+                />
+              )}
+              <TextInput
+                label="Код оценки"
+                placeholder="Присваивается при сохранении"
+                value={record.code}
+                onChange={(value) =>
+                  onChange({ ...record, code: value.slice(0, 40) })
+                }
+                isDisabled={disabled}
+                size="lg"
+                width="100%"
+              />
+            </Grid>
+          </FormLayout>
+        </VStack>
+      </Section>
+      <Section padding={0} aria-labelledby="visit-heading">
+        <VStack gap={5}>
+          <HStack gap={3}>
+            <Stethoscope className="size-5 text-secondary" />
+            <Heading level={2} id="visit-heading">
+              Данные приёма
+            </Heading>
+          </HStack>
+          <FormLayout defaultOptionality="optional">
+            <Grid columns={{ minWidth: 220, max: 2 }} gap={5}>
+              <DateInput
+                format={displayDate}
+                label="Дата оценки"
+                value={iso(visit.date)}
+                max={iso(localDate())}
+                onChange={(value) => changeVisit('date', value ?? '')}
+                isDisabled={disabled}
+                hasClear
+                size="lg"
+                width="100%"
+              />
+              <Selector
+                label="Тип приёма"
+                value={visit.type}
+                onChange={(value) => changeVisit('type', value)}
+                options={[
+                  { value: 'initial', label: 'Первичный' },
+                  { value: 'followup', label: 'Повторный' },
+                ]}
+                isDisabled={disabled}
+                size="lg"
+                width="100%"
+              />
+              <TextInput
+                label="Лечащий врач"
+                placeholder="ФИО врача"
+                value={visit.clinician}
+                onChange={(value) =>
+                  changeVisit('clinician', value.slice(0, 160))
+                }
+                isDisabled={disabled}
+                size="lg"
+                width="100%"
+              />
+              <TextInput
+                label="Специальность"
+                placeholder="Например, педиатр"
+                value={visit.specialty}
+                onChange={(value) =>
+                  changeVisit('specialty', value.slice(0, 100))
+                }
+                isDisabled={disabled}
+                size="lg"
+                width="100%"
+              />
+            </Grid>
+            <TextInput
+              label="Медицинская организация"
               placeholder="Название клиники или отделения"
-              maxLength={180}
               value={visit.clinic}
-              onChange={(e) => changeVisit('clinic', e.target.value)}
+              onChange={(value) => changeVisit('clinic', value.slice(0, 180))}
+              isDisabled={disabled}
+              size="lg"
+              width="100%"
             />
-          </label>
-          <label className="wide-field">
-            Предварительный диагноз / причина оценки
-            <input
+            <TextInput
+              label="Предварительный диагноз / причина оценки"
               placeholder="Диагноз, код МКБ или ведущий клинический синдром"
-              maxLength={500}
               value={visit.diagnosis}
-              onChange={(e) => changeVisit('diagnosis', e.target.value)}
+              onChange={(value) =>
+                changeVisit('diagnosis', value.slice(0, 500))
+              }
+              isDisabled={disabled}
+              size="lg"
+              width="100%"
             />
-          </label>
-        </div>
-      </section>
-    </>
+          </FormLayout>
+        </VStack>
+      </Section>
+    </VStack>
   );
 }
+
 export function CriteriaForm({
   record,
   onChange,
-}: {
-  record: Assessment;
-  onChange: (r: Assessment) => void;
-}) {
+  disabled = false,
+}: FormProps) {
   const result = calculate(record.answers);
-  const answer = (c: Category, id: string) =>
-    onChange({ ...record, answers: toggleCriterion(record.answers, c, id) });
+  const answer = (cat: Category, id: string) =>
+    onChange({ ...record, answers: toggleCriterion(record.answers, cat, id) });
   return (
-    <TooltipProvider delay={200}>
-      <div className="criteria-heading">
-        <h2>Клинические признаки</h2>
-        <span>{result.reviewed} из 8 категорий</span>
-      </div>
-      <Progress
-        value={(result.reviewed / 8) * 100}
-        aria-label="Просмотрено категорий"
-        locale="ru-RU"
-        aria-valuetext={result.reviewed + ' из 8 категорий'}
-        className="category-progress"
-      />
+    <VStack gap={6}>
+      <VStack gap={4}>
+        <HStack justify="between" gap={3} wrap="wrap">
+          <Heading level={2}>Клинические признаки</Heading>
+          <Text color="secondary">{result.reviewed} из 8 категорий</Text>
+        </HStack>
+        <ProgressBar
+          value={result.reviewed}
+          max={8}
+          label="Просмотрено категорий"
+          isLabelHidden
+          formatValueLabel={(value) => `${value} из 8 категорий`}
+        />
+      </VStack>
       {categories.map((cat, index) => {
         const current = record.answers[cat.id];
-        const count = current?.selected.length ?? 0;
+        const extras = (item: Category['criteria'][number]) => (
+          <HStack gap={2} className="shrink-0">
+            <Tooltip content={item.description} touchTrigger="tap" delay={200}>
+              <IconButton
+                label={'Определение: ' + item.label}
+                icon={<Info className="size-4" />}
+                variant="ghost"
+                size="sm"
+                onClick={(event) => event.stopPropagation()}
+              />
+            </Tooltip>
+            <Text type="code" color="secondary" className="min-w-8 text-end">
+              +{item.points}
+            </Text>
+          </HStack>
+        );
         return (
-          <section
-            className="category panel question-section"
+          <Section
             key={cat.id}
+            padding={0}
+            paddingBlockEnd={6}
+            dividers={['bottom']}
             aria-labelledby={'heading-' + cat.id}
           >
-            <div className="category-header">
-              <span
-                className={'category-number ' + (current ? 'reviewed' : '')}
-              >
-                {current ? (
-                  <Check size={15} />
-                ) : (
-                  String(index + 1).padStart(2, '0')
+            <VStack gap={4}>
+              <HStack gap={3} align="start">
+                <Text type="code" color="secondary" className="pt-1">
+                  {String(index + 1).padStart(2, '0')}
+                </Text>
+                <VStack gap={2} className="min-w-0 flex-1">
+                  <Heading level={3} id={'heading-' + cat.id}>
+                    {cat.title}
+                  </Heading>
+                  <Text color="secondary">
+                    {cat.mode === 'single'
+                      ? 'Выберите один подходящий вариант'
+                      : 'Отметьте все выявленные признаки'}
+                  </Text>
+                </VStack>
+                {current && (
+                  <Check
+                    className="size-4 shrink-0 text-success mt-1"
+                    aria-label="Категория просмотрена"
+                  />
                 )}
-              </span>
-              <div>
-                <h3 id={'heading-' + cat.id}>{cat.title}</h3>
-                <p>
-                  {cat.mode === 'single'
-                    ? 'Выберите один подходящий вариант'
-                    : 'Отметьте все выявленные признаки'}
-                </p>
-              </div>
-              {current && (
-                <span className="category-status">
-                  {current.status === 'none'
-                    ? 'Не выявлены'
-                    : current.status === 'unknown'
-                      ? 'Нет данных'
-                      : count + ' выбрано'}
-                </span>
-              )}
-            </div>
-            <div className="category-body">
-              <p className="choice-hint">
+              </HStack>
+              <Text type="supporting">
                 {cat.mode === 'multi'
                   ? 'Вклад категории — максимальный вес выбранного признака.'
                   : 'Варианты взаимоисключающие.'}
-              </p>
+              </Text>
               {cat.mode === 'single' ? (
-                <RadioGroup
-                  aria-label={cat.title}
+                <RadioList
+                  label={cat.title}
+                  isLabelHidden
                   value={current?.selected[0] ?? ''}
-                  onValueChange={(id) => id && answer(cat, String(id))}
-                  className="criterion-group"
+                  onChange={(id) => id && answer(cat, id)}
+                  isDisabled={disabled}
+                  width="100%"
                 >
                   {cat.criteria.map((item) => (
-                    <div
+                    <RadioListItem
                       key={item.id}
-                      className={
-                        'criterion ' +
-                        (current?.selected.includes(item.id) ? 'selected' : '')
-                      }
-                    >
-                      <RadioGroupItem id={item.id} value={item.id} />
-                      <label htmlFor={item.id}>{item.label}</label>
-                      <Tooltip>
-                        <TooltipTrigger
-                          aria-label={'Определение: ' + item.label}
-                          className="info-button"
-                        >
-                          <Info size={15} />
-                        </TooltipTrigger>
-                        <TooltipContent className="clinical-tooltip">
-                          {item.description}
-                        </TooltipContent>
-                      </Tooltip>
-                      <b>+{item.points}</b>
-                    </div>
-                  ))}
-                </RadioGroup>
-              ) : (
-                cat.criteria.map((item) => (
-                  <div
-                    key={item.id}
-                    className={
-                      'criterion ' +
-                      (current?.selected.includes(item.id) ? 'selected' : '')
-                    }
-                  >
-                    <Checkbox
-                      id={item.id}
-                      checked={current?.selected.includes(item.id) ?? false}
-                      onCheckedChange={() => answer(cat, item.id)}
+                      value={item.id}
+                      label={item.label}
+                      endContent={extras(item)}
                     />
-                    <label htmlFor={item.id}>{item.label}</label>
-                    <Tooltip>
-                      <TooltipTrigger
-                        aria-label={'Определение: ' + item.label}
-                        className="info-button"
-                      >
-                        <Info size={15} />
-                      </TooltipTrigger>
-                      <TooltipContent className="clinical-tooltip">
-                        {item.description}
-                      </TooltipContent>
-                    </Tooltip>
-                    <b>+{item.points}</b>
-                  </div>
-                ))
+                  ))}
+                </RadioList>
+              ) : (
+                <CheckboxList
+                  label={cat.title}
+                  isLabelHidden
+                  value={current?.selected ?? []}
+                  onChange={(selected) => {
+                    const answers = { ...record.answers };
+                    if (selected.length)
+                      answers[cat.id] = { status: 'selected', selected };
+                    else delete answers[cat.id];
+                    onChange({ ...record, answers });
+                  }}
+                  density="spacious"
+                  isDisabled={disabled}
+                  width="100%"
+                >
+                  {cat.criteria.map((item) => (
+                    <CheckboxListItem
+                      key={item.id}
+                      value={item.id}
+                      label={<Text>{item.label}</Text>}
+                      aria-label={item.label}
+                      endContent={extras(item)}
+                    />
+                  ))}
+                </CheckboxList>
               )}
-              <div className="category-options">
+              <HStack gap={2} wrap="wrap">
                 {(['none', 'unknown'] as const).map((status) => (
-                  <button
+                  <Button
                     key={status}
-                    className={current?.status === status ? 'chosen' : ''}
+                    label={
+                      status === 'none'
+                        ? cat.id === 'onset'
+                          ? 'Симптомы не выявлены'
+                          : 'Признаки не выявлены'
+                        : 'Данных недостаточно'
+                    }
+                    variant={current?.status === status ? 'secondary' : 'ghost'}
+                    icon={
+                      current?.status === status ? (
+                        <Check className="size-4" />
+                      ) : undefined
+                    }
                     aria-pressed={current?.status === status}
+                    isDisabled={disabled}
+                    size="sm"
                     onClick={() =>
                       onChange({
                         ...record,
@@ -419,33 +443,27 @@ export function CriteriaForm({
                         },
                       })
                     }
-                  >
-                    {current?.status === status && <Check size={12} />}{' '}
-                    {status === 'none'
-                      ? cat.id === 'onset'
-                        ? 'Симптомы не выявлены'
-                        : 'Признаки не выявлены'
-                      : 'Данных недостаточно'}
-                  </button>
+                  />
                 ))}
                 {current && (
-                  <button
-                    className="reset-category"
+                  <Button
+                    label="Сбросить"
+                    variant="ghost"
+                    size="sm"
+                    isDisabled={disabled}
                     onClick={() => {
-                      const next = { ...record.answers };
-                      delete next[cat.id];
-                      onChange({ ...record, answers: next });
+                      const answers = { ...record.answers };
+                      delete answers[cat.id];
+                      onChange({ ...record, answers });
                     }}
-                  >
-                    Сбросить
-                  </button>
+                  />
                 )}
-              </div>
-            </div>
-          </section>
+              </HStack>
+            </VStack>
+          </Section>
         );
       })}
-    </TooltipProvider>
+    </VStack>
   );
 }
 
@@ -453,69 +471,87 @@ export function ScoreCard({
   record,
   onResult,
   final = false,
+  disabled = false,
 }: {
   record: Assessment;
   onResult?: () => void;
   final?: boolean;
+  disabled?: boolean;
 }) {
   const r = calculate(record.answers);
   return (
-    <section className="score-panel panel">
-      <div className="score-heading">
-        <Compass size={18} />
-        <h2>{final ? 'Результат оценки' : 'Предварительный результат'}</h2>
-        <span className="live-dot" />
-      </div>
-      <div
-        className={'score-value' + (!r.hasData ? ' is-empty' : '')}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {r.hasData ? r.score : 'Нет данных'}
-        {r.hasData && <span>из 100</span>}
-      </div>
-      {r.hasData && (
-        <div className={'score-state ' + r.zone}>{zoneNames[r.zone]}</div>
-      )}
-      <div
-        className={'risk-track ' + (!r.hasData ? 'inactive' : '')}
-        aria-label={
-          'Демонстрационная шкала: ' +
-          (r.hasData ? r.score + ' из 100' : 'нет данных')
-        }
-      >
-        {r.hasData && <i style={{ left: r.score + '%' }} />}
-      </div>
-      <div className="risk-labels">
-        <span>0–24 · Низкий</span>
-        <span>25–49</span>
-        <span>50–100 · Высокий</span>
-      </div>
-      <p className="score-description">
-        {r.hasData
-          ? 'Результат по известным данным: ' +
-            r.known +
-            ' из 8 категорий. Незаполненные категории не считаются отрицательным ответом.'
-          : 'Отметьте клинические признаки. Результат обновляется по мере заполнения.'}
-      </p>
-      {onResult && (
-        <button
-          className="button primary full"
-          onClick={onResult}
-          disabled={!r.hasData}
-        >
-          Посмотреть результат
-          <ArrowRight size={16} />
-        </button>
-      )}
-      <p className="model-note">
-        Демонстрационная модель · не валидирована.
-        <br />
-        Индекс не является вероятностью диагноза.
-      </p>
-    </section>
+    <Card padding={6} variant="default" className="w-full">
+      <VStack gap={5}>
+        <HStack gap={3}>
+          <Compass className="size-5 text-secondary" />
+          <Heading level={3}>
+            {final ? 'Результат оценки' : 'Предварительный результат'}
+          </Heading>
+        </HStack>
+        <VStack gap={3} aria-live="polite" aria-atomic="true">
+          <HStack gap={2} align="end">
+            <Text
+              type={r.hasData ? 'display-1' : 'large'}
+              weight="semibold"
+              hasTabularNumbers
+            >
+              {r.hasData ? r.score : 'Нет данных'}
+            </Text>
+            {r.hasData && <Text color="secondary">из 100</Text>}
+          </HStack>
+          {r.hasData && (
+            <HStack gap={2}>
+              <StatusDot
+                variant={riskVariant(r.zone)}
+                label={zoneNames[r.zone]}
+              />
+              <Text weight="medium">{zoneNames[r.zone]}</Text>
+            </HStack>
+          )}
+        </VStack>
+        <VStack gap={3}>
+          <ProgressBar
+            label="Демонстрационный индекс"
+            isLabelHidden
+            value={r.score}
+            max={100}
+            formatValueLabel={() =>
+              r.hasData ? `${r.score} из 100` : 'Нет данных'
+            }
+            variant={r.hasData ? riskVariant(r.zone) : 'neutral'}
+            isDisabled={!r.hasData}
+          />
+          <HStack justify="between" gap={2}>
+            <Text type="supporting">0–24 · Низкий</Text>
+            <Text type="supporting">25–49</Text>
+            <Text type="supporting">50–100 · Высокий</Text>
+          </HStack>
+        </VStack>
+        <Text color="secondary">
+          {r.hasData
+            ? `Результат по известным данным: ${r.known} из 8 категорий. Незаполненные категории не считаются отрицательным ответом.`
+            : 'Отметьте клинические признаки. Результат обновляется по мере заполнения.'}
+        </Text>
+        {onResult && (
+          <Button
+            label="Посмотреть результат"
+            variant="primary"
+            size="lg"
+            width="100%"
+            endContent={<ArrowRight className="size-4" />}
+            onClick={onResult}
+            isDisabled={!r.hasData || disabled}
+          />
+        )}
+        <Text type="supporting">
+          Демонстрационная модель · не валидирована. Индекс не является
+          вероятностью диагноза.
+        </Text>
+      </VStack>
+    </Card>
   );
 }
+
 export function Explainability({
   record,
   expanded = false,
@@ -523,78 +559,100 @@ export function Explainability({
   record: Assessment;
   expanded?: boolean;
 }) {
-  const r = calculate(record.answers);
-  const items = r.contributions
-    .filter((c) => c.selected.length)
+  const items = calculate(record.answers)
+    .contributions.filter((c) => c.selected.length)
     .sort((a, b) => b.points - a.points);
   return (
-    <section className="explanation-card panel">
-      <div className="section-title">
-        <BookOpen size={18} />
-        <h2>Что влияет на оценку</h2>
-      </div>
-      {!items.length ? (
-        <div className="explanation-empty">
-          <ClipboardList size={24} />
-          <p>Здесь появятся выбранные признаки и их вклад в результат.</p>
-        </div>
-      ) : (
-        <div className="contributions">
-          {items.map((item) => (
-            <details key={item.category.id} open={expanded || undefined}>
-              <summary>
-                <span>{item.category.title}</span>
-                <b>+{item.points}</b>
-                <ChevronDown size={14} />
-              </summary>
-              <div className="contribution-content">
-                {item.selected.map((c) => (
-                  <p key={c.id}>
-                    {c.label} <span>(вес {c.points})</span>
-                  </p>
-                ))}
-                <p className="contribution-rule">
-                  Учитывается максимальный вес: {item.points} баллов.
-                </p>
-                {sources
-                  .filter((s) => item.category.sourceIds.includes(s.id))
-                  .map((s) => (
-                    <a key={s.id} href={s.url} target="_blank" rel="noreferrer">
-                      {s.organization} ↗
-                    </a>
-                  ))}
-              </div>
-            </details>
-          ))}
-        </div>
-      )}
-      <div className="explain-footer">
-        <CircleHelp size={15} />
-        <span>Источники описывают признаки, а не веса.</span>
-      </div>
-    </section>
+    <Section padding={0} aria-label="Обоснование результата">
+      <VStack gap={4}>
+        <HStack gap={3}>
+          <BookOpen className="size-5 text-secondary" />
+          <Heading level={3}>Что влияет на оценку</Heading>
+        </HStack>
+        {!items.length ? (
+          <EmptyState
+            isCompact
+            title="Признаки пока не выбраны"
+            description="Здесь появятся выбранные признаки и их вклад в результат."
+            icon={<ClipboardList />}
+          />
+        ) : (
+          <VStack gap={0}>
+            {items.map((item) => (
+              <Section
+                padding={0}
+                paddingBlock={3}
+                dividers={['bottom']}
+                key={item.category.id}
+              >
+                <Collapsible
+                  defaultIsOpen={expanded}
+                  trigger={
+                    <HStack gap={3} justify="between" className="w-full">
+                      <Text weight="medium">{item.category.title}</Text>
+                      <Text type="code">+{item.points}</Text>
+                    </HStack>
+                  }
+                >
+                  <VStack gap={3} paddingBlockStart={4}>
+                    {item.selected.map((c) => (
+                      <Text key={c.id}>
+                        {c.label}{' '}
+                        <Text color="secondary">(вес {c.points})</Text>
+                      </Text>
+                    ))}
+                    <Text type="supporting">
+                      Учитывается максимальный вес: {item.points} баллов.
+                    </Text>
+                    <HStack gap={3} wrap="wrap">
+                      {sources
+                        .filter((s) => item.category.sourceIds.includes(s.id))
+                        .map((s) => (
+                          <Link
+                            key={s.id}
+                            href={s.url}
+                            isExternalLink
+                            newTabLabel="Открывается в новой вкладке"
+                          >
+                            {s.organization}
+                          </Link>
+                        ))}
+                    </HStack>
+                  </VStack>
+                </Collapsible>
+              </Section>
+            ))}
+          </VStack>
+        )}
+        <HStack gap={2} align="start">
+          <CircleHelp className="size-4 shrink-0 text-secondary" />
+          <Text type="supporting">
+            Источники описывают признаки, а не веса.
+          </Text>
+        </HStack>
+      </VStack>
+    </Section>
   );
 }
+
 export function UrgentFlags({ record }: { record: Assessment }) {
-  const r = calculate(record.answers);
-  return r.urgent.length > 0 ? (
-    <div className="urgent-flags">
-      {r.urgent.map((c) => (
-        <div key={c.id} className="urgent-note">
-          <Info size={18} />
-          <p>
-            <strong>{c.label}</strong>
-            {c.urgent?.split(' Источник:')[0]}{' '}
-            <a
+  const urgent = calculate(record.answers).urgent;
+  return urgent.length ? (
+    <VStack gap={3}>
+      {urgent.map((c) => (
+        <Banner key={c.id} status="warning" title={c.label} collapsible={false}>
+          <VStack gap={3}>
+            <Text>{c.urgent?.split(' Источник:')[0]}</Text>
+            <Link
               href="https://www.rch.org.au/clinicalguide/guideline_index/Metabolic_Disorders/"
-              target="_blank"
-              rel="noreferrer"
+              isExternalLink
+              newTabLabel="Открывается в новой вкладке"
             >
-              Рекомендации RCH ↗
-            </a>
-          </p>
-        </div>
+              Рекомендации RCH
+            </Link>
+          </VStack>
+        </Banner>
       ))}
-    </div>
+    </VStack>
   ) : null;
 }
