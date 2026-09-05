@@ -100,11 +100,12 @@ export function validateAssessment(
     (!validDate(visit.date) || visit.date > localDate())
   )
     throw new Error('Укажите корректную дату оценки, не позднее сегодняшней.');
+  if (!recoverDraft && patient.birthDate && !validDate(patient.birthDate))
+    throw new Error('Введите корректную дату рождения в формате дд.мм.гггг.');
   if (
     !recoverDraft &&
     patient.birthDate &&
-    (!validDate(patient.birthDate) ||
-      patient.birthDate > (visit.date || localDate()))
+    patient.birthDate > (visit.date || localDate())
   )
     throw new Error('Дата рождения должна быть не позднее даты оценки.');
   const computedAge = patient.birthDate

@@ -45,7 +45,7 @@ export function PageHeading({
       wrap="wrap"
       className="pt-6 md:pt-0"
     >
-      <VStack gap={3} className="min-w-0" maxWidth={640}>
+      <VStack gap={1} className="min-w-0" maxWidth={640}>
         <Heading level={1}>{title}</Heading>
         <Text color="secondary">{description}</Text>
       </VStack>

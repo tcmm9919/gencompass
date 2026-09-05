@@ -393,13 +393,13 @@ export default function Home() {
                     isLoading={saving}
                     size="lg"
                   />
-                  <Text type="supporting">
-                    {dirty
-                      ? 'Есть несохранённые изменения'
-                      : record.updatedAt && record.code
-                        ? 'Сохранено в истории'
-                        : 'Можно заполнить частично'}
-                  </Text>
+                  {(dirty || (record.updatedAt && record.code)) && (
+                    <Text type="supporting">
+                      {dirty
+                        ? 'Есть несохранённые изменения'
+                        : 'Сохранено в истории'}
+                    </Text>
+                  )}
                 </VStack>
               }
             />

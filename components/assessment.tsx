@@ -25,6 +25,7 @@ import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Section } from '@astryxdesign/core/Section';
 import { InterfaceRegion } from '@/components/workflow-ui';
+import { BirthDateInput } from '@/components/birth-date-input';
 import { Card } from '@astryxdesign/core/Card';
 import { FormLayout } from '@astryxdesign/core/FormLayout';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -101,8 +102,8 @@ export function PatientContext({
     <VStack gap={4}>
       <InterfaceRegion aria-labelledby="patient-heading">
         <VStack gap={5}>
-          <HStack gap={3}>
-            <UserRound className="size-5 text-secondary" />
+          <HStack gap={3} align="center">
+            <UserRound className="size-5 shrink-0 text-secondary" />
             <Heading level={2} id="patient-heading">
               Данные пациента
             </Heading>
@@ -135,18 +136,11 @@ export function PatientContext({
                   width="100%"
                 />
               ))}
-              <DateInput
-                format={displayDate}
-                label="Дата рождения"
-                placeholder="дд.мм.гггг"
-                value={iso(patient.birthDate)}
-                min="1906-01-01"
+              <BirthDateInput
+                value={patient.birthDate || undefined}
                 max={iso(visit.date || localDate())}
                 onChange={(value) => changePatient('birthDate', value ?? '')}
                 isDisabled={disabled}
-                hasClear
-                size="lg"
-                width="100%"
               />
               <Selector
                 label="Пол"
@@ -209,8 +203,8 @@ export function PatientContext({
       </InterfaceRegion>
       <InterfaceRegion aria-labelledby="visit-heading">
         <VStack gap={5}>
-          <HStack gap={3}>
-            <Stethoscope className="size-5 text-secondary" />
+          <HStack gap={3} align="center">
+            <Stethoscope className="size-5 shrink-0 text-secondary" />
             <Heading level={2} id="visit-heading">
               Данные приёма
             </Heading>
@@ -316,7 +310,7 @@ export function CriteriaForm({
       {categories.map((cat, index) => {
         const current = record.answers[cat.id];
         const extras = (item: Category['criteria'][number]) => (
-          <HStack gap={2} className="shrink-0">
+          <HStack gap={2} align="center" className="shrink-0">
             <Tooltip content={item.description} touchTrigger="tap" delay={200}>
               <IconButton
                 label={'Определение: ' + item.label}
@@ -370,6 +364,22 @@ export function CriteriaForm({
                       value={item.id}
                       label={item.label}
                       endContent={extras(item)}
+                      onClick={() => {
+                        if (!disabled && current?.selected.includes(item.id)) {
+                          answer(cat, item.id);
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === ' ' &&
+                          event.target instanceof HTMLInputElement &&
+                          event.target.type === 'radio' &&
+                          !disabled
+                        ) {
+                          event.preventDefault();
+                          if (!event.repeat) answer(cat, item.id);
+                        }
+                      }}
                     />
                   ))}
                 </RadioList>
@@ -381,7 +391,12 @@ export function CriteriaForm({
                   aria-labelledby={'heading-' + cat.id}
                 >
                   {cat.criteria.map((item) => (
-                    <HStack key={item.id} gap={2} className="min-w-0">
+                    <HStack
+                      key={item.id}
+                      gap={2}
+                      align="center"
+                      className="min-w-0"
+                    >
                       <CheckboxInput
                         label={item.label}
                         value={current?.selected.includes(item.id) ?? false}
@@ -395,12 +410,13 @@ export function CriteriaForm({
                 </VStack>
               )}
               <HStack
-                gap={2}
+                gap={4}
+                align="center"
                 wrap="wrap"
                 className="border-t border-border pt-4"
               >
                 {(['none', 'unknown'] as const).map((status) => (
-                  <Button
+                  <CheckboxInput
                     key={status}
                     label={
                       status === 'none'
@@ -409,24 +425,15 @@ export function CriteriaForm({
                           : 'Признаки не выявлены'
                         : 'Данных недостаточно'
                     }
-                    variant={current?.status === status ? 'secondary' : 'ghost'}
-                    icon={
-                      current?.status === status ? (
-                        <Check className="size-4" />
-                      ) : undefined
-                    }
-                    aria-pressed={current?.status === status}
+                    value={current?.status === status}
                     isDisabled={disabled}
-                    size="sm"
-                    onClick={() =>
-                      onChange({
-                        ...record,
-                        answers: {
-                          ...record.answers,
-                          [cat.id]: { status, selected: [] },
-                        },
-                      })
-                    }
+                    className="[&_.astryx-checkbox-label]:font-normal"
+                    onChange={(checked) => {
+                      const answers = { ...record.answers };
+                      if (checked) answers[cat.id] = { status, selected: [] };
+                      else delete answers[cat.id];
+                      onChange({ ...record, answers });
+                    }}
                   />
                 ))}
                 {current && (
@@ -466,8 +473,8 @@ export function ScoreCard({
   return (
     <Card padding={0} variant="default" className="w-full">
       <VStack gap={5} className="p-4 sm:p-6">
-        <HStack gap={3}>
-          <Compass className="size-5 text-secondary" />
+        <HStack gap={3} align="center">
+          <Compass className="size-5 shrink-0 text-secondary" />
           <Heading level={3}>
             {final ? 'Результат оценки' : 'Предварительный результат'}
           </Heading>
@@ -484,7 +491,7 @@ export function ScoreCard({
             {r.hasData && <Text color="secondary">из 100</Text>}
           </HStack>
           {r.hasData && (
-            <HStack gap={2}>
+            <HStack gap={2} align="center">
               <StatusDot
                 variant={riskVariant(r.zone)}
                 label={zoneNames[r.zone]}
@@ -549,8 +556,8 @@ export function Explainability({
   return (
     <InterfaceRegion aria-label="Обоснование результата">
       <VStack gap={4}>
-        <HStack gap={3}>
-          <BookOpen className="size-5 text-secondary" />
+        <HStack gap={3} align="center">
+          <BookOpen className="size-5 shrink-0 text-secondary" />
           <Heading level={3}>Что влияет на оценку</Heading>
         </HStack>
         {!items.length ? (

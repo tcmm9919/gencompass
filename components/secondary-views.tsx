@@ -89,8 +89,8 @@ export function ResultView({
           <UrgentFlags record={record} />
           <InterfaceRegion>
             <VStack gap={4}>
-              <HStack gap={3}>
-                <FileText className="size-5 text-secondary" />
+              <HStack gap={3} align="center">
+                <FileText className="size-5 shrink-0 text-secondary" />
                 <Heading level={2}>Следующий шаг</Heading>
               </HStack>
               <Heading level={3}>
@@ -132,8 +132,8 @@ export function ResultView({
           <Explainability record={record} expanded />
           <InterfaceRegion>
             <VStack gap={4}>
-              <HStack gap={3}>
-                <ClipboardList className="size-5 text-secondary" />
+              <HStack gap={3} align="center">
+                <ClipboardList className="size-5 shrink-0 text-secondary" />
                 <Heading level={2}>Полнота оценки</Heading>
                 <Text color="secondary">{r.reviewed}/8</Text>
               </HStack>
@@ -523,8 +523,8 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
         </VStack>
         <InterfaceRegion aria-label="Научная библиография">
           <VStack as="aside" gap={4} className="min-w-0">
-            <HStack gap={3}>
-              <BookOpen className="size-5 text-secondary" />
+            <HStack gap={3} align="center">
+              <BookOpen className="size-5 shrink-0 text-secondary" />
               <Heading level={2}>Научная библиография</Heading>
             </HStack>
             <Text color="secondary">
