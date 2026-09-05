@@ -10,6 +10,7 @@ import {
 import { validateAssessment } from '../lib/validation';
 import { reportText } from '../lib/report';
 import { registerClinicalTools } from '../lib/webmcp';
+import './browser-store.test';
 const selected = (...selected: string[]) => ({
   status: 'selected' as const,
   selected,

@@ -52,6 +52,8 @@ import { validateAssessment } from '@/lib/validation';
 import { reportText, downloadText } from '@/lib/report';
 import { emptyPatient, emptyVisit } from '@/lib/patient';
 import { registerClinicalTools } from '@/lib/webmcp';
+import { fullPreviewAssessment } from '@/lib/demo';
+import { loadSavedAssessments, persistAssessment } from '@/lib/persistence';
 const initial: Assessment = {
   id: '',
   code: '',
@@ -67,6 +69,11 @@ const initial: Assessment = {
 const stashKey = 'gencompass-temporary-draft-v1';
 const signature = (r: Assessment) =>
   JSON.stringify([r.id, r.code, r.age, r.notes, r.patient, r.visit, r.answers]);
+type PreviewBackup = {
+  record: Assessment;
+  baseline: string;
+  previewId?: string;
+};
 
 export default function Home() {
   const [view, setView] = useState<View>('assessment');
@@ -81,6 +88,9 @@ export default function Home() {
   );
   const [ready, setReady] = useState(false);
   const [baseline, setBaseline] = useState('');
+  const [previewBackup, setPreviewBackup] = useState<PreviewBackup | null>(
+    null,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -88,7 +98,7 @@ export default function Home() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [referral, setReferral] = useState(false);
-  const [pending, setPending] = useState<Assessment | null>(null);
+  const [pending, setPending] = useState<(() => void) | null>(null);
   const [printContent, setPrintContent] = useState('');
   const stateRef = useRef(record);
   const busyRef = useRef(false);
@@ -96,6 +106,9 @@ export default function Home() {
     stateRef.current = record;
   }, [record]);
   const dirty = ready && signature(record) !== baseline;
+  const backupDirty =
+    previewBackup !== null &&
+    signature(previewBackup.record) !== previewBackup.baseline;
   const r = calculate(record.answers);
   const go = useCallback((v: View) => {
     setView(v);
@@ -120,6 +133,25 @@ export default function Home() {
           );
         }
         clean = typeof stored.baseline === 'string' ? stored.baseline : '';
+        if (stored.previewBackup) {
+          try {
+            setPreviewBackup({
+              previewId:
+                typeof stored.previewBackup.previewId === 'string'
+                  ? stored.previewBackup.previewId
+                  : undefined,
+              record: validateAssessment(stored.previewBackup.record, {
+                recoverDraft: true,
+              }),
+              baseline:
+                typeof stored.previewBackup.baseline === 'string'
+                  ? stored.previewBackup.baseline
+                  : '',
+            });
+          } catch {
+            // Keep a usable draft even if an older preview backup is invalid.
+          }
+        }
         setNotice('Восстановлен незавершённый ввод.');
       }
     } catch {
@@ -148,21 +180,24 @@ export default function Home() {
   useEffect(() => {
     if (!ready) return;
     try {
-      sessionStorage.setItem(stashKey, JSON.stringify({ record, baseline }));
+      sessionStorage.setItem(
+        stashKey,
+        JSON.stringify({ record, baseline, previewBackup }),
+      );
     } catch {
       setNotice(
         'Временный ввод не сохранён на устройстве. Используйте «Сохранить черновик».',
       );
     }
-  }, [record, baseline, ready]);
+  }, [record, baseline, previewBackup, ready]);
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !backupDirty) return;
     const leave = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener('beforeunload', leave);
     return () => window.removeEventListener('beforeunload', leave);
-  }, [dirty]);
+  }, [dirty, backupDirty]);
   useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(''), 6000);
@@ -176,16 +211,7 @@ export default function Home() {
     setHistoryLoading(true);
     setHistoryError('');
     try {
-      const response = await fetch('/api/assessments', {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(15000),
-      });
-      const data = (await response.json()) as {
-        error?: string;
-        assessments: Assessment[];
-      };
-      if (!response.ok) throw new Error(data.error);
-      setHistory(data.assessments.map((item) => validateAssessment(item)));
+      setHistory(await loadSavedAssessments());
     } catch (e) {
       setHistoryError(
         e instanceof Error
@@ -213,18 +239,7 @@ export default function Home() {
     setSaving(true);
     setError('');
     try {
-      const response = await fetch('/api/assessments', {
-        method: 'POST',
-        signal: AbortSignal.timeout(15000),
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(outgoing),
-      });
-      const data = (await response.json()) as {
-        error?: string;
-        assessment: unknown;
-      };
-      if (!response.ok) throw new Error(data.error);
-      const saved = validateAssessment(data.assessment);
+      const saved = await persistAssessment(outgoing);
       if (signature(stateRef.current) !== rawSignature) return false;
       setRecord(saved);
       setBaseline(signature(saved));
@@ -259,8 +274,41 @@ export default function Home() {
   }
   function requestOpen(next: Assessment) {
     if (busyRef.current) return;
-    if (dirty) setPending(next);
+    if (dirty) setPending(() => () => activate(next));
     else activate(next);
+  }
+  function fillPreview() {
+    if (!ready || busyRef.current) return;
+    const demo = fullPreviewAssessment();
+    const apply = () => {
+      setPreviewBackup((current) => ({
+        ...(current ?? { record: stateRef.current, baseline }),
+        previewId: demo.id,
+      }));
+      setRecord(demo);
+      setBaseline('');
+      setPending(null);
+      setError('');
+      setNotice('Заполнены тестовые данные и все 8 категорий.');
+      go('assessment');
+    };
+    if (previewBackup && previewBackup.previewId !== record.id && dirty)
+      setPending(() => apply);
+    else apply();
+  }
+  function restorePreview() {
+    if (!ready || !previewBackup || busyRef.current) return;
+    const apply = () => {
+      setRecord(previewBackup.record);
+      setBaseline(previewBackup.baseline);
+      setPreviewBackup(null);
+      setPending(null);
+      setError('');
+      setNotice('Восстановлена форма до автозаполнения.');
+      go('assessment');
+    };
+    if (previewBackup.previewId !== record.id && dirty) setPending(() => apply);
+    else apply();
   }
   function openExample() {
     const demo = newAssessment();
@@ -308,6 +356,9 @@ export default function Home() {
     <>
       <AppShell
         view={view}
+        onFillPreview={fillPreview}
+        onRestorePreview={previewBackup ? restorePreview : undefined}
+        previewDisabled={saving || !ready}
         onNavigate={(v) => {
           if (busyRef.current) return;
           if (v === 'assessment') requestOpen(newAssessment());
@@ -495,7 +546,7 @@ export default function Home() {
               </button>
               <button
                 className="text-button"
-                onClick={() => pending && activate(pending)}
+                onClick={() => pending?.()}
                 disabled={saving}
               >
                 Не сохранять
@@ -505,7 +556,7 @@ export default function Home() {
                 disabled={saving}
                 onClick={async () => {
                   const next = pending;
-                  if (next && (await save('draft'))) activate(next);
+                  if (next && (await save('draft'))) next();
                 }}
               >
                 {saving ? 'Сохраняем…' : 'Сохранить'}

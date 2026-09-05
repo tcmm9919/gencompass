@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:pages": "vite build --config vite.pages.config.ts",
+    "preview:pages": "vite preview --config vite.pages.config.ts",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
@@ -15,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-tests.mjs",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.local.json --persist-to .wrangler/state",
-    "lint:app": "oxlint app lib db components/app-shell.tsx components/assessment.tsx components/secondary-views.tsx components/referral.tsx"
+    "lint:app": "oxlint app lib db pages-client vite.pages.config.ts components/app-shell.tsx components/assessment.tsx components/secondary-views.tsx components/referral.tsx"
   },
   "dependencies": {
     "react": "19.2.6",

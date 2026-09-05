@@ -2,11 +2,13 @@
 import {
   BookOpen,
   ChevronRight,
+  Code2,
   Compass,
   FileClock,
   Plus,
   ShieldCheck,
   Stethoscope,
+  WandSparkles,
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -17,6 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { browserStorageMode } from '@/lib/persistence';
 export type View = 'assessment' | 'result' | 'history' | 'methodology';
 const names = {
   assessment: 'Новая оценка',
@@ -62,14 +65,63 @@ function Navigation({
     </nav>
   );
 }
+function DeveloperTools({
+  onFill,
+  onRestore,
+  disabled,
+}: {
+  onFill: () => void;
+  onRestore?: () => void;
+  disabled: boolean;
+}) {
+  const { setOpenMobile } = useSidebar();
+  return (
+    <section className="developer-tools" aria-label="Dev tools">
+      <div className="developer-tools-title">
+        <Code2 size={16} />
+        Dev tools
+      </div>
+      <p>Тестовые данные · все вопросы</p>
+      <button
+        className="button secondary"
+        disabled={disabled}
+        onClick={() => {
+          onFill();
+          setOpenMobile(false);
+        }}
+      >
+        <WandSparkles size={16} />
+        Заполнить всё
+      </button>
+      {onRestore && (
+        <button
+          className="developer-tools-restore"
+          disabled={disabled}
+          onClick={() => {
+            onRestore();
+            setOpenMobile(false);
+          }}
+        >
+          Вернуть форму
+        </button>
+      )}
+    </section>
+  );
+}
 export function AppShell({
   children,
   view,
   onNavigate,
+  onFillPreview,
+  onRestorePreview,
+  previewDisabled,
 }: {
   children: React.ReactNode;
   view: View;
   onNavigate: (v: View) => void;
+  onFillPreview: () => void;
+  onRestorePreview?: () => void;
+  previewDisabled: boolean;
 }) {
   return (
     <SidebarProvider
@@ -90,6 +142,11 @@ export function AppShell({
         <SidebarContent>
           <div className="nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</div>
           <Navigation view={view} onNavigate={onNavigate} />
+          <DeveloperTools
+            onFill={onFillPreview}
+            onRestore={onRestorePreview}
+            disabled={previewDisabled}
+          />
           <div className="sidebar-note">
             <ShieldCheck size={21} />
             <p>
@@ -99,10 +156,6 @@ export function AppShell({
           </div>
         </SidebarContent>
         <SidebarFooter>
-          <div className="lumen">
-            <strong>LUMEN</strong>
-            <span>GENOMICS</span>
-          </div>
           <div className="version">
             GenCompass <span>v0.1 · прототип</span>
           </div>
@@ -119,7 +172,9 @@ export function AppShell({
           <div className="topbar-right">
             <span className="demo-badge">
               <span />
-              Демонстрационный режим
+              {browserStorageMode
+                ? 'Демо · данные в браузере'
+                : 'Демонстрационный режим'}
             </span>
             <div className="avatar">
               <Stethoscope size={19} />
