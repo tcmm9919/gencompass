@@ -1,5 +1,5 @@
 'use client';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { Clock3, ShieldCheck } from 'lucide-react';
 import { HStack } from '@astryxdesign/core/HStack';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -7,6 +7,26 @@ import { Section } from '@astryxdesign/core/Section';
 import { Text } from '@astryxdesign/core/Text';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Stepper, Step } from '@astryxdesign/core/Stepper';
+
+export function InterfaceRegion({
+  children,
+  className = '',
+  ...props
+}: Pick<
+  ComponentProps<typeof Section>,
+  'children' | 'className' | 'aria-label' | 'aria-labelledby'
+>) {
+  return (
+    <Section
+      {...props}
+      variant="transparent"
+      padding={0}
+      className={`relative min-w-0 rounded-lg border border-border bg-surface p-4 sm:p-6 ${className}`}
+    >
+      {children}
+    </Section>
+  );
+}
 
 export function PageHeading({
   title,
@@ -37,10 +57,9 @@ export function PageHeading({
 export function WorkflowSteps({ active = 0 }: { active?: number }) {
   return (
     <Section
-      paddingBlock={4}
-      paddingInline={0}
-      dividers={['bottom']}
-      className="sticky top-12 md:top-0 z-20 bg-surface"
+      variant="transparent"
+      padding={0}
+      className="sticky top-12 md:top-0 z-20 rounded-lg border border-border bg-surface p-2 sm:p-4"
     >
       <HStack gap={5} justify="between" className="min-w-0">
         <Stepper

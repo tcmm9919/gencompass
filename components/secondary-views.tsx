@@ -41,7 +41,11 @@ import {
   Explainability,
   UrgentFlags,
 } from '@/components/assessment';
-import { PageHeading, WorkflowSteps } from '@/components/workflow-ui';
+import {
+  InterfaceRegion,
+  PageHeading,
+  WorkflowSteps,
+} from '@/components/workflow-ui';
 import { browserStorageMode } from '@/lib/persistence';
 import { patientName, ageLabel } from '@/lib/patient';
 import { calculate, categories, sources, type Assessment } from '@/lib/model';
@@ -83,7 +87,7 @@ export function ResultView({
         <VStack gap={6} className="min-w-0">
           <ScoreCard record={record} final />
           <UrgentFlags record={record} />
-          <Section padding={0}>
+          <InterfaceRegion>
             <VStack gap={4}>
               <HStack gap={3}>
                 <FileText className="size-5 text-secondary" />
@@ -122,11 +126,11 @@ export function ResultView({
                 />
               </HStack>
             </VStack>
-          </Section>
+          </InterfaceRegion>
         </VStack>
-        <VStack gap={8} className="min-w-0">
+        <VStack gap={5} className="min-w-0">
           <Explainability record={record} expanded />
-          <Section padding={0}>
+          <InterfaceRegion>
             <VStack gap={4}>
               <HStack gap={3}>
                 <ClipboardList className="size-5 text-secondary" />
@@ -187,16 +191,16 @@ export function ResultView({
                 дополнить при повторном визите.
               </Text>
             </VStack>
-          </Section>
+          </InterfaceRegion>
           {record.notes && (
-            <Section padding={0}>
+            <InterfaceRegion>
               <VStack gap={3}>
                 <Heading level={2}>Примечание к случаю</Heading>
                 <Text className="whitespace-pre-wrap break-words">
                   {record.notes}
                 </Text>
               </VStack>
-            </Section>
+            </InterfaceRegion>
           )}
         </VStack>
       </Grid>
@@ -327,7 +331,7 @@ export function HistoryView({
           />
         }
       />
-      <Section padding={0}>
+      <InterfaceRegion>
         <VStack gap={4}>
           <HStack justify="between" gap={3}>
             <Heading level={2}>Сохранённые случаи · {items.length}</Heading>
@@ -383,7 +387,7 @@ export function HistoryView({
             </Section>
           )}
         </VStack>
-      </Section>
+      </InterfaceRegion>
       <HStack gap={3} align="start">
         <ShieldCheck className="size-4 shrink-0 text-secondary" />
         <Text color="secondary">
@@ -416,8 +420,8 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
         align="start"
         className="grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]"
       >
-        <VStack gap={8} className="min-w-0" maxWidth={720}>
-          <Section padding={0} paddingBlockEnd={6} dividers={['bottom']}>
+        <VStack gap={5} className="min-w-0" maxWidth={720}>
+          <InterfaceRegion>
             <VStack gap={4}>
               <Text type="supporting">01 / ПРИНЦИП</Text>
               <Heading level={2}>Каждый балл можно объяснить</Heading>
@@ -441,8 +445,8 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
                 данных.
               </Text>
             </VStack>
-          </Section>
-          <Section padding={0} paddingBlockEnd={6} dividers={['bottom']}>
+          </InterfaceRegion>
+          <InterfaceRegion>
             <VStack gap={4}>
               <Text type="supporting">02 / МОДЕЛЬ DEMO-0.1</Text>
               <Heading level={2}>
@@ -495,8 +499,8 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
                 показанную консультацию.
               </Text>
             </VStack>
-          </Section>
-          <Section padding={0}>
+          </InterfaceRegion>
+          <InterfaceRegion>
             <VStack gap={4}>
               <Text type="supporting">03 / ГРАНИЦЫ ПРИМЕНЕНИЯ</Text>
               <Heading level={2}>Поддержка профессионального решения</Heading>
@@ -516,41 +520,43 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
                 медицинских данных не входят в прототип.
               </Text>
             </VStack>
-          </Section>
+          </InterfaceRegion>
         </VStack>
-        <VStack as="aside" gap={4} className="min-w-0">
-          <HStack gap={3}>
-            <BookOpen className="size-5 text-secondary" />
-            <Heading level={2}>Научная библиография</Heading>
-          </HStack>
-          <Text color="secondary">
-            Источники описывают клинический контекст. Они не подтверждают
-            числовые веса GenCompass.
-          </Text>
-          {sources.map((source, index) => (
-            <Section
-              key={source.id}
-              padding={0}
-              paddingBlock={4}
-              dividers={['bottom']}
-            >
-              <VStack gap={3}>
-                <Text type="supporting">
-                  [{index + 1}] {source.organization}
-                  {source.year ? ` · ${source.year}` : ''}
-                </Text>
-                <Link
-                  href={source.url}
-                  isExternalLink
-                  newTabLabel="Открывается в новой вкладке"
-                >
-                  {source.title}
-                </Link>
-                <Text color="secondary">{source.description}</Text>
-              </VStack>
-            </Section>
-          ))}
-        </VStack>
+        <InterfaceRegion aria-label="Научная библиография">
+          <VStack as="aside" gap={4} className="min-w-0">
+            <HStack gap={3}>
+              <BookOpen className="size-5 text-secondary" />
+              <Heading level={2}>Научная библиография</Heading>
+            </HStack>
+            <Text color="secondary">
+              Источники описывают клинический контекст. Они не подтверждают
+              числовые веса GenCompass.
+            </Text>
+            {sources.map((source, index) => (
+              <Section
+                key={source.id}
+                padding={0}
+                paddingBlock={4}
+                dividers={['bottom']}
+              >
+                <VStack gap={3}>
+                  <Text type="supporting">
+                    [{index + 1}] {source.organization}
+                    {source.year ? ` · ${source.year}` : ''}
+                  </Text>
+                  <Link
+                    href={source.url}
+                    isExternalLink
+                    newTabLabel="Открывается в новой вкладке"
+                  >
+                    {source.title}
+                  </Link>
+                  <Text color="secondary">{source.description}</Text>
+                </VStack>
+              </Section>
+            ))}
+          </VStack>
+        </InterfaceRegion>
       </Grid>
     </>
   );

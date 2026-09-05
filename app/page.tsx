@@ -21,6 +21,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { TextArea } from '@astryxdesign/core/TextArea';
 import { useToast } from '@astryxdesign/core/Toast';
 import {
+  InterfaceRegion,
   PageHeading,
   WorkflowSteps,
   ClinicalNote,
@@ -413,7 +414,7 @@ export default function Home() {
               className="grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]"
               align="start"
             >
-              <VStack gap={8} className="min-w-0" aria-busy={saving}>
+              <VStack gap={6} className="min-w-0" aria-busy={saving}>
                 <PatientContext
                   record={record}
                   onChange={update}
@@ -424,21 +425,23 @@ export default function Home() {
                   onChange={update}
                   disabled={saving || !ready}
                 />
-                <TextArea
-                  label="Примечание к случаю"
-                  isOptional
-                  value={record.notes}
-                  onChange={(notes) =>
-                    update({ ...record, notes: notes.slice(0, 2000) })
-                  }
-                  maxLength={2000}
-                  placeholder="Жалобы, анамнез и дополнительные клинические сведения…"
-                  rows={4}
-                  description="Дополнительные сведения будут включены в результат и направление."
-                  isDisabled={saving || !ready}
-                  width="100%"
-                  size="lg"
-                />
+                <InterfaceRegion>
+                  <TextArea
+                    label="Примечание к случаю"
+                    isOptional
+                    value={record.notes}
+                    onChange={(notes) =>
+                      update({ ...record, notes: notes.slice(0, 2000) })
+                    }
+                    maxLength={2000}
+                    placeholder="Жалобы, анамнез и дополнительные клинические сведения…"
+                    rows={4}
+                    description="Дополнительные сведения будут включены в результат и направление."
+                    isDisabled={saving || !ready}
+                    width="100%"
+                    size="lg"
+                  />
+                </InterfaceRegion>
                 <HStack justify="between" gap={4} wrap="wrap">
                   <Text color="secondary">
                     {r.known} из 8 категорий с известными данными

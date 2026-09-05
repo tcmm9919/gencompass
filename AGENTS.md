@@ -2,6 +2,12 @@
 
 Project-specific guidance for AI coding agents.
 
+GenCompass UX: preserve clear common regions. Patient details, visit details, each
+clinical question category, notes, result explanations, and page-level data groups
+use bounded surface panels against the Neutral body background. Keep related rows
+inside a shared panel, with all question categories visible. Do not replace these
+boundaries with whitespace-only grouping when applying the library's defaults.
+
 <!-- ASTRYX:START -->
 Astryx v0.5.2 · 163 components
 CLI: run every command as `npx astryx <cmd>` (shown below as `astryx ...`).

@@ -28,6 +28,7 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Section } from '@astryxdesign/core/Section';
+import { InterfaceRegion } from '@/components/workflow-ui';
 import { Card } from '@astryxdesign/core/Card';
 import { FormLayout } from '@astryxdesign/core/FormLayout';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -101,8 +102,8 @@ export function PatientContext({
     });
   };
   return (
-    <VStack gap={8}>
-      <Section padding={0} aria-labelledby="patient-heading">
+    <VStack gap={5}>
+      <InterfaceRegion aria-labelledby="patient-heading">
         <VStack gap={5}>
           <HStack gap={3}>
             <UserRound className="size-5 text-secondary" />
@@ -209,8 +210,8 @@ export function PatientContext({
             </Grid>
           </FormLayout>
         </VStack>
-      </Section>
-      <Section padding={0} aria-labelledby="visit-heading">
+      </InterfaceRegion>
+      <InterfaceRegion aria-labelledby="visit-heading">
         <VStack gap={5}>
           <HStack gap={3}>
             <Stethoscope className="size-5 text-secondary" />
@@ -288,7 +289,7 @@ export function PatientContext({
             />
           </FormLayout>
         </VStack>
-      </Section>
+      </InterfaceRegion>
     </VStack>
   );
 }
@@ -302,7 +303,7 @@ export function CriteriaForm({
   const answer = (cat: Category, id: string) =>
     onChange({ ...record, answers: toggleCriterion(record.answers, cat, id) });
   return (
-    <VStack gap={6}>
+    <VStack gap={4}>
       <VStack gap={4}>
         <HStack justify="between" gap={3} wrap="wrap">
           <Heading level={2}>Клинические признаки</Heading>
@@ -335,13 +336,7 @@ export function CriteriaForm({
           </HStack>
         );
         return (
-          <Section
-            key={cat.id}
-            padding={0}
-            paddingBlockEnd={6}
-            dividers={['bottom']}
-            aria-labelledby={'heading-' + cat.id}
-          >
+          <InterfaceRegion key={cat.id} aria-labelledby={'heading-' + cat.id}>
             <VStack gap={4}>
               <HStack gap={3} align="start">
                 <Text type="code" color="secondary" className="pt-1">
@@ -414,7 +409,11 @@ export function CriteriaForm({
                   ))}
                 </CheckboxList>
               )}
-              <HStack gap={2} wrap="wrap">
+              <HStack
+                gap={2}
+                wrap="wrap"
+                className="border-t border-border pt-4"
+              >
                 {(['none', 'unknown'] as const).map((status) => (
                   <Button
                     key={status}
@@ -460,7 +459,7 @@ export function CriteriaForm({
                 )}
               </HStack>
             </VStack>
-          </Section>
+          </InterfaceRegion>
         );
       })}
     </VStack>
@@ -563,7 +562,7 @@ export function Explainability({
     .contributions.filter((c) => c.selected.length)
     .sort((a, b) => b.points - a.points);
   return (
-    <Section padding={0} aria-label="Обоснование результата">
+    <InterfaceRegion aria-label="Обоснование результата">
       <VStack gap={4}>
         <HStack gap={3}>
           <BookOpen className="size-5 text-secondary" />
@@ -631,7 +630,7 @@ export function Explainability({
           </Text>
         </HStack>
       </VStack>
-    </Section>
+    </InterfaceRegion>
   );
 }
 

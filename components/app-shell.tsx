@@ -60,7 +60,7 @@ export function AppShell({
       <Theme theme={neutralTheme} mode={mode}>
         <LayerProvider>
           <AstryxAppShell
-            className="[&_.astryx-app-shell-header]:bg-surface"
+            className="[&_.astryx-app-shell-header]:bg-surface [&_[role=main]]:bg-body"
             height="auto"
             variant="section"
             contentPadding={0}
@@ -183,7 +183,12 @@ export function AppShell({
               maxWidth={1440}
             >
               {children}
-              <Section dividers={['top']} paddingBlock={5} paddingInline={0}>
+              <Section
+                variant="transparent"
+                dividers={['top']}
+                paddingBlock={5}
+                paddingInline={0}
+              >
                 <HStack gap={3} wrap="wrap" justify="between">
                   <Text type="supporting">
                     GenCompass · Для специалистов здравоохранения
