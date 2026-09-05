@@ -2,7 +2,6 @@
 import {
   BookOpen,
   Check,
-  CircleHelp,
   ClipboardList,
   Compass,
   Info,
@@ -18,10 +17,7 @@ import { DateInput } from '@astryxdesign/core/DateInput';
 import type { ISODateString } from '@astryxdesign/core/utils';
 import { Selector } from '@astryxdesign/core/Selector';
 import { RadioList, RadioListItem } from '@astryxdesign/core/RadioList';
-import {
-  CheckboxList,
-  CheckboxListItem,
-} from '@astryxdesign/core/CheckboxList';
+import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Tooltip } from '@astryxdesign/core/Tooltip';
 import { ProgressBar } from '@astryxdesign/core/ProgressBar';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -102,7 +98,7 @@ export function PatientContext({
     });
   };
   return (
-    <VStack gap={5}>
+    <VStack gap={4}>
       <InterfaceRegion aria-labelledby="patient-heading">
         <VStack gap={5}>
           <HStack gap={3}>
@@ -378,31 +374,25 @@ export function CriteriaForm({
                   ))}
                 </RadioList>
               ) : (
-                <CheckboxList
-                  label={cat.title}
-                  isLabelHidden
-                  value={current?.selected ?? []}
-                  onChange={(selected) => {
-                    const answers = { ...record.answers };
-                    if (selected.length)
-                      answers[cat.id] = { status: 'selected', selected };
-                    else delete answers[cat.id];
-                    onChange({ ...record, answers });
-                  }}
-                  density="spacious"
-                  isDisabled={disabled}
-                  width="100%"
+                <VStack
+                  gap={2}
+                  as="fieldset"
+                  className="min-w-0"
+                  aria-labelledby={'heading-' + cat.id}
                 >
                   {cat.criteria.map((item) => (
-                    <CheckboxListItem
-                      key={item.id}
-                      value={item.id}
-                      label={<Text>{item.label}</Text>}
-                      aria-label={item.label}
-                      endContent={extras(item)}
-                    />
+                    <HStack key={item.id} gap={2} className="min-w-0">
+                      <CheckboxInput
+                        label={item.label}
+                        value={current?.selected.includes(item.id) ?? false}
+                        onChange={() => answer(cat, item.id)}
+                        isDisabled={disabled}
+                        className="min-w-0 flex-1 [&_.astryx-checkbox-label]:font-normal"
+                      />
+                      {extras(item)}
+                    </HStack>
                   ))}
-                </CheckboxList>
+                </VStack>
               )}
               <HStack
                 gap={2}
@@ -618,12 +608,7 @@ export function Explainability({
             ))}
           </VStack>
         )}
-        <HStack gap={2} align="start">
-          <CircleHelp className="size-4 shrink-0 text-secondary" />
-          <Text type="supporting">
-            Источники описывают признаки, а не веса.
-          </Text>
-        </HStack>
+        <Text type="supporting">Источники описывают признаки, а не веса.</Text>
       </VStack>
     </InterfaceRegion>
   );

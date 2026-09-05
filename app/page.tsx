@@ -410,11 +410,11 @@ export default function Home() {
             {/* Below xl the score moves above the form, and supporting details follow it.
               At xl the form and 340px summary rail share the content region. */}
             <Grid
-              gap={8}
+              gap={4}
               className="grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]"
               align="start"
             >
-              <VStack gap={6} className="min-w-0" aria-busy={saving}>
+              <VStack gap={4} className="min-w-0" aria-busy={saving}>
                 <PatientContext
                   record={record}
                   onChange={update}
@@ -459,7 +459,7 @@ export default function Home() {
               </VStack>
               <VStack
                 as="aside"
-                gap={6}
+                gap={4}
                 className="min-w-0 xl:sticky xl:top-24"
               >
                 <VStack className="hidden xl:flex">
