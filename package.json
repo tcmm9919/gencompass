@@ -20,8 +20,11 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-tests.mjs",
     "db:migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.local.json --persist-to .wrangler/state",
-    "lint:app": "oxlint app lib db pages-client vite.pages.config.ts components/app-shell.tsx components/assessment.tsx components/secondary-views.tsx components/referral.tsx components/workflow-ui.tsx",
-    "astryx": "astryx"
+    "lint:app": "oxlint app lib db pages-client vite.pages.config.ts components/app-shell.tsx components/assessment.tsx components/secondary-views.tsx components/referral.tsx components/workflow-ui.tsx --ignore-pattern 'lib/generated/**'",
+    "astryx": "astryx",
+    "theme:build": "astryx theme build lib/gencompass-theme.ts --out lib/generated/gencompass-neutral.css",
+    "prebuild": "npm run theme:build",
+    "prebuild:pages": "npm run theme:build"
   },
   "dependencies": {
     "@astryxdesign/core": "^0.5.2",

@@ -7,6 +7,8 @@ clinical question category, notes, result explanations, and page-level data grou
 use bounded surface panels against the Neutral body background. Keep related rows
 inside a shared panel, with all question categories visible. Do not replace these
 boundaries with whitespace-only grouping when applying the library's defaults.
+The sticky stepper sits directly on the page background, outside the panels.
+Use the GenCompass theme extending Neutral for links and navigation styling.
 
 <!-- ASTRYX:START -->
 Astryx v0.5.2 · 163 components

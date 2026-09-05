@@ -7,7 +7,6 @@ import {
   FileClock,
   Moon,
   Plus,
-  ShieldCheck,
   Sun,
   WandSparkles,
 } from 'lucide-react';
@@ -19,18 +18,15 @@ import {
   SideNavSection,
 } from '@astryxdesign/core/SideNav';
 import { Theme } from '@astryxdesign/core/theme';
-import { neutralTheme } from '@astryxdesign/theme-neutral/built';
+import { gencompassNeutralTheme } from '@/lib/generated/gencompass-neutral.js';
 import { InternationalizationProvider } from '@astryxdesign/core/i18n';
 import ru from '@astryxdesign/core/locales/ru-RU.json';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { LayerProvider } from '@astryxdesign/core/Layer';
-import { Section } from '@astryxdesign/core/Section';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
-import { StatusDot } from '@astryxdesign/core/StatusDot';
-import { browserStorageMode } from '@/lib/persistence';
 
 export type View = 'assessment' | 'result' | 'history' | 'methodology';
 
@@ -57,7 +53,7 @@ export function AppShell({
   };
   return (
     <InternationalizationProvider locale="ru-RU" messages={{ 'ru-RU': ru }}>
-      <Theme theme={neutralTheme} mode={mode}>
+      <Theme theme={gencompassNeutralTheme} mode={mode}>
         <LayerProvider>
           <AstryxAppShell
             className="[&_.astryx-app-shell-header]:bg-surface [&_[role=main]]:bg-body"
@@ -73,21 +69,23 @@ export function AppShell({
               <SideNav
                 header={
                   <SideNavHeading
-                    icon={<Compass />}
+                    icon={<Compass className="size-6 md:size-8" />}
                     heading="GenCompass"
-                    subheading="Клинический скрининг"
+                    subheading="КЛИНИЧЕСКИЙ СКРИНИНГ"
+                    className="md:px-4 md:py-8"
                   />
                 }
                 footer={
-                  <VStack gap={6} padding={4}>
-                    <VStack gap={3} aria-label="Dev tools">
+                  <VStack gap={3} padding={4}>
+                    <VStack
+                      gap={3}
+                      aria-label="Dev tools"
+                      className="rounded-lg border border-dashed border-border p-3"
+                    >
                       <HStack gap={2}>
                         <Code2 className="size-4" />
                         <Text weight="semibold">Dev tools</Text>
                       </HStack>
-                      <Text color="secondary">
-                        Тестовые данные · все вопросы
-                      </Text>
                       <Button
                         label="Заполнить всё"
                         icon={<WandSparkles className="size-4" />}
@@ -102,20 +100,6 @@ export function AppShell({
                           onClick={() => closeAndRun(onRestorePreview)}
                         />
                       )}
-                    </VStack>
-                    <VStack gap={2}>
-                      <HStack gap={2}>
-                        <StatusDot
-                          variant="neutral"
-                          label="Демонстрационный режим"
-                        />
-                        <Text type="supporting">
-                          {browserStorageMode
-                            ? 'Демо · данные в браузере'
-                            : 'Демонстрационный режим'}
-                        </Text>
-                      </HStack>
-                      <Text type="supporting">GenCompass · v0.1</Text>
                     </VStack>
                   </VStack>
                 }
@@ -143,34 +127,36 @@ export function AppShell({
                   />
                 }
               >
-                <SideNavSection title="Рабочее пространство">
-                  {(
-                    [
-                      { id: 'assessment', label: 'Новая оценка', Icon: Plus },
-                      {
-                        id: 'history',
-                        label: 'История оценок',
-                        Icon: FileClock,
-                      },
-                      {
-                        id: 'methodology',
-                        label: 'Методология',
-                        Icon: BookOpen,
-                      },
-                    ] as const
-                  ).map(({ id, label, Icon }) => (
-                    <SideNavItem
-                      key={id}
-                      label={label}
-                      icon={<Icon />}
-                      isSelected={
-                        view === id ||
-                        (view === 'result' && id === 'assessment')
-                      }
-                      isDisabled={previewDisabled}
-                      onClick={() => closeAndRun(() => onNavigate(id))}
-                    />
-                  ))}
+                <SideNavSection title="Рабочее пространство" isHeaderHidden>
+                  <VStack gap={1}>
+                    {(
+                      [
+                        { id: 'assessment', label: 'Новая оценка', Icon: Plus },
+                        {
+                          id: 'history',
+                          label: 'История оценок',
+                          Icon: FileClock,
+                        },
+                        {
+                          id: 'methodology',
+                          label: 'Методология',
+                          Icon: BookOpen,
+                        },
+                      ] as const
+                    ).map(({ id, label, Icon }) => (
+                      <SideNavItem
+                        key={id}
+                        label={label}
+                        icon={<Icon className="size-5" />}
+                        isSelected={
+                          view === id ||
+                          (view === 'result' && id === 'assessment')
+                        }
+                        isDisabled={previewDisabled}
+                        onClick={() => closeAndRun(() => onNavigate(id))}
+                      />
+                    ))}
+                  </VStack>
                 </SideNavSection>
               </SideNav>
             }
@@ -183,24 +169,6 @@ export function AppShell({
               maxWidth={1440}
             >
               {children}
-              <Section
-                variant="transparent"
-                dividers={['top']}
-                paddingBlock={5}
-                paddingInline={0}
-              >
-                <HStack gap={3} wrap="wrap" justify="between">
-                  <Text type="supporting">
-                    GenCompass · Для специалистов здравоохранения
-                  </Text>
-                  <HStack gap={2}>
-                    <ShieldCheck className="size-4 text-secondary" />
-                    <Text type="supporting">
-                      Поддержка клинического решения
-                    </Text>
-                  </HStack>
-                </HStack>
-              </Section>
             </VStack>
           </AstryxAppShell>
         </LayerProvider>

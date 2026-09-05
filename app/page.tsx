@@ -444,7 +444,7 @@ export default function Home() {
                 </InterfaceRegion>
                 <HStack justify="between" gap={4} wrap="wrap">
                   <Text color="secondary">
-                    {r.known} из 8 категорий с известными данными
+                    Известные данные: {r.known} из 8 категорий
                   </Text>
                   <Button
                     label="Посмотреть результат"

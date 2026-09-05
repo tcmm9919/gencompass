@@ -111,7 +111,7 @@ export function PatientContext({
               Данные пациента
             </Heading>
           </HStack>
-          <FormLayout defaultOptionality="optional">
+          <FormLayout defaultOptionality="optional" className="gap-5">
             <Grid columns={{ minWidth: 220, max: 2 }} gap={5}>
               {(
                 [
@@ -169,7 +169,7 @@ export function PatientContext({
               {patient.birthDate ? (
                 <TextInput
                   label="Возраст"
-                  description="Рассчитан по дате рождения"
+                  labelTooltip="Рассчитан по дате рождения на дату приёма"
                   value={ageLabel(patient.birthDate, visit.date || localDate())}
                   isReadOnly
                   size="lg"
@@ -219,7 +219,7 @@ export function PatientContext({
               Данные приёма
             </Heading>
           </HStack>
-          <FormLayout defaultOptionality="optional">
+          <FormLayout defaultOptionality="optional" className="gap-5">
             <Grid columns={{ minWidth: 220, max: 2 }} gap={5}>
               <DateInput
                 format={displayDate}
@@ -359,11 +359,6 @@ export function CriteriaForm({
                   />
                 )}
               </HStack>
-              <Text type="supporting">
-                {cat.mode === 'multi'
-                  ? 'Вклад категории — максимальный вес выбранного признака.'
-                  : 'Варианты взаимоисключающие.'}
-              </Text>
               {cat.mode === 'single' ? (
                 <RadioList
                   label={cat.title}
@@ -479,8 +474,8 @@ export function ScoreCard({
 }) {
   const r = calculate(record.answers);
   return (
-    <Card padding={6} variant="default" className="w-full">
-      <VStack gap={5}>
+    <Card padding={0} variant="default" className="w-full">
+      <VStack gap={5} className="p-4 sm:p-6">
         <HStack gap={3}>
           <Compass className="size-5 text-secondary" />
           <Heading level={3}>

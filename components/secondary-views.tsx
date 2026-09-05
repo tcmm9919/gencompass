@@ -268,7 +268,7 @@ export function HistoryView({
     },
     {
       key: 'score',
-      header: 'Демо-индекс',
+      header: 'Индекс',
       width: proportional(1, { minWidth: 140 }),
       renderCell: (item) => {
         const r = calculate(item.answers);
@@ -448,14 +448,13 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
           </InterfaceRegion>
           <InterfaceRegion>
             <VStack gap={4}>
-              <Text type="supporting">02 / МОДЕЛЬ DEMO-0.1</Text>
+              <Text type="supporting">02 / РАСЧЁТ</Text>
               <Heading level={2}>
                 Клинические признаки. Демонстрационные веса.
               </Heading>
               <Text>
-                В исходном PRD не задана утверждённая модель скоринга. Веса и
-                пороги ниже созданы для проверки интерфейса. Они не валидированы
-                и не показывают вероятность генетического заболевания.
+                Веса и пороги используются для демонстрации расчёта. Модель не
+                валидирована и не показывает вероятность заболевания.
               </Text>
               <Table
                 density="balanced"
