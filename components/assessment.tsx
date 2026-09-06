@@ -415,27 +415,65 @@ export function CriteriaForm({
                 wrap="wrap"
                 className="border-t border-border pt-4"
               >
-                {(['none', 'unknown'] as const).map((status) => (
-                  <CheckboxInput
-                    key={status}
-                    label={
-                      status === 'none'
-                        ? cat.id === 'onset'
-                          ? 'Симптомы не выявлены'
-                          : 'Признаки не выявлены'
-                        : 'Данных недостаточно'
-                    }
-                    value={current?.status === status}
-                    isDisabled={disabled}
-                    className="[&_.astryx-checkbox-label]:font-normal"
-                    onChange={(checked) => {
-                      const answers = { ...record.answers };
-                      if (checked) answers[cat.id] = { status, selected: [] };
-                      else delete answers[cat.id];
-                      onChange({ ...record, answers });
-                    }}
-                  />
-                ))}
+                <RadioList
+                  label={`Данные категории: ${cat.title}`}
+                  isLabelHidden
+                  orientation="horizontal"
+                  value={
+                    current?.status === 'selected'
+                      ? ''
+                      : (current?.status ?? '')
+                  }
+                  onChange={(status) => {
+                    if (status !== 'none' && status !== 'unknown') return;
+                    onChange({
+                      ...record,
+                      answers: {
+                        ...record.answers,
+                        [cat.id]: { status, selected: [] },
+                      },
+                    });
+                  }}
+                  isDisabled={disabled}
+                  width="auto"
+                  className="min-w-0 max-w-full [&_.astryx-radio-list]:flex-wrap [&_.astryx-radio-list]:gap-4"
+                >
+                  {(['none', 'unknown'] as const).map((status) => (
+                    <RadioListItem
+                      key={status}
+                      value={status}
+                      label={
+                        status === 'none'
+                          ? cat.id === 'onset'
+                            ? 'Симптомы не выявлены'
+                            : 'Признаки не выявлены'
+                          : 'Данных недостаточно'
+                      }
+                      onClick={() => {
+                        if (disabled || current?.status !== status) return;
+                        const answers = { ...record.answers };
+                        delete answers[cat.id];
+                        onChange({ ...record, answers });
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === ' ' &&
+                          event.target instanceof HTMLInputElement &&
+                          event.target.type === 'radio' &&
+                          !disabled
+                        ) {
+                          event.preventDefault();
+                          if (event.repeat) return;
+                          const answers = { ...record.answers };
+                          if (current?.status === status)
+                            delete answers[cat.id];
+                          else answers[cat.id] = { status, selected: [] };
+                          onChange({ ...record, answers });
+                        }
+                      }}
+                    />
+                  ))}
+                </RadioList>
                 {current && (
                   <Button
                     label="Сбросить"
