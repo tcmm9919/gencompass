@@ -82,3 +82,17 @@ test('Pages corrupt storage cannot silently become an empty history', () => {
   storage.setItem(key, JSON.stringify({ ...saved, id: crypto.randomUUID() }));
   assert.throws(() => store.list(), /Некорректная запись/);
 });
+
+test('new model case code is assigned by persistence and cannot be edited; legacy codes survive', () => {
+  const store = browserAssessmentStore(memoryStorage());
+  const draft = newAssessment();
+  const saved = store.save({ ...draft, code: 'MANUALLY-ENTERED' });
+  assert.equal(saved.code, 'GC-' + draft.id.slice(0, 6).toUpperCase());
+  assert.equal(store.save({ ...saved, code: 'CHANGED' }).code, saved.code);
+  const old = store.save({
+    ...newAssessment(),
+    modelVersion: 'demo-0.1',
+    code: 'GC-LEGACY',
+  });
+  assert.equal(old.code, 'GC-LEGACY');
+});

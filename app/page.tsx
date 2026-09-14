@@ -26,9 +26,14 @@ import {
   WorkflowSteps,
   ClinicalNote,
 } from '@/components/workflow-ui';
+import { PatientContext } from '@/components/patient-context';
+import {
+  applyClinicianProfile,
+  readClinicianProfile,
+  saveClinicianProfile,
+} from '@/lib/clinician-profile';
 import { AppShell, type View } from '@/components/app-shell';
 import {
-  PatientContext,
   CriteriaForm,
   ScoreCard,
   Explainability,
@@ -41,7 +46,7 @@ import {
 } from '@/components/secondary-views';
 import { ReferralDialog } from '@/components/referral';
 import {
-  calculate,
+  calculateAssessment,
   newAssessment,
   type Assessment,
   type Answers,
@@ -62,16 +67,37 @@ const initial: Assessment = {
   answers: {},
   status: 'draft',
   updatedAt: '',
-  modelVersion: 'demo-0.1',
+  modelVersion: 'review-0.2',
 };
 const stashKey = 'gencompass-temporary-draft-v1';
 const signature = (r: Assessment) =>
-  JSON.stringify([r.id, r.code, r.age, r.notes, r.patient, r.visit, r.answers]);
+  JSON.stringify([
+    r.id,
+    r.code,
+    r.age,
+    r.notes,
+    r.patient,
+    r.visit,
+    r.answers,
+    r.modelVersion,
+  ]);
 type PreviewBackup = {
   record: Assessment;
   baseline: string;
   previewId?: string;
 };
+
+function createAssessmentWithProfile(): Assessment {
+  const record = newAssessment();
+  try {
+    return applyClinicianProfile(
+      record,
+      readClinicianProfile(window.localStorage),
+    );
+  } catch {
+    return record;
+  }
+}
 
 export default function Home() {
   const [view, setView] = useState<View>('assessment');
@@ -91,6 +117,12 @@ export default function Home() {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!error) return;
+    errorRef.current?.scrollIntoView({ block: 'start' });
+    errorRef.current?.focus({ preventScroll: true });
+  }, [error]);
   const [notice, setNotice] = useState('');
   const [history, setHistory] = useState<Assessment[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -107,14 +139,14 @@ export default function Home() {
   const backupDirty =
     previewBackup !== null &&
     signature(previewBackup.record) !== previewBackup.baseline;
-  const r = calculate(record.answers);
+  const r = calculateAssessment(record);
   const go = useCallback((v: View) => {
     setView(v);
     historyReplace(v);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
   useEffect(() => {
-    let draft = newAssessment();
+    let draft = createAssessmentWithProfile();
     let clean = signature(draft);
     try {
       const saved = sessionStorage.getItem(stashKey);
@@ -162,14 +194,19 @@ export default function Home() {
     setReady(true);
     const readHash = () => {
       const hash = location.hash.slice(1);
-      if (['assessment', 'history', 'methodology', 'result'].includes(hash))
-        setView(
-          hash === 'result' &&
-            !calculate((stateRef.current.id ? stateRef.current : draft).answers)
-              .hasData
-            ? 'assessment'
-            : (hash as View),
-        );
+      if (['assessment', 'history', 'methodology', 'result'].includes(hash)) {
+        const current = stateRef.current.id ? stateRef.current : draft;
+        let validResult = current.status === 'complete';
+        try {
+          validateAssessment(current);
+        } catch {
+          validResult = false;
+        }
+        const next =
+          hash === 'result' && !validResult ? 'assessment' : (hash as View);
+        setView(next);
+        if (next !== hash) historyReplace(next);
+      }
     };
     readHash();
     window.addEventListener('hashchange', readHash);
@@ -231,6 +268,7 @@ export default function Home() {
       outgoing = validateAssessment({ ...stateRef.current, status });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Проверьте введённые данные.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
       return false;
     }
     busyRef.current = true;
@@ -238,6 +276,15 @@ export default function Home() {
     setError('');
     try {
       const saved = await persistAssessment(outgoing);
+      try {
+        if (
+          !outgoing.code.startsWith('GC-DEMO') &&
+          previewBackup?.previewId !== saved.id
+        )
+          saveClinicianProfile(window.localStorage, saved.visit);
+      } catch {
+        /* Assessment save succeeded even if profile storage is unavailable. */
+      }
       if (signature(stateRef.current) !== rawSignature) return false;
       setRecord(saved);
       setBaseline(signature(saved));
@@ -275,6 +322,12 @@ export default function Home() {
     if (dirty) setPending(() => () => activate(next));
     else activate(next);
   }
+  function requestNew() {
+    if (busyRef.current) return;
+    const open = () => activate(createAssessmentWithProfile());
+    if (dirty) setPending(() => open);
+    else open();
+  }
   function fillPreview() {
     if (!ready || busyRef.current) return;
     const demo = fullPreviewAssessment();
@@ -311,7 +364,10 @@ export default function Home() {
   function openExample() {
     const demo = newAssessment();
     demo.code = 'GC-DEMO-01';
-    demo.age = '4';
+    demo.patient.birthDate = '2022-04-12';
+    demo.patient.sex = 'female';
+    demo.visit.diagnosis =
+      'Задержка развития, врождённые особенности и семейный анамнез.';
     demo.notes =
       'Учебный случай: задержка развития, сочетание врождённых особенностей и семейный анамнез.';
     demo.answers = {
@@ -328,7 +384,7 @@ export default function Home() {
         selected: ['neurodevelopment-delay'],
       },
       treatment: { status: 'unknown', selected: [] },
-      laboratory: { status: 'none', selected: [] },
+      laboratory: { status: 'normal', selected: [] },
     };
     requestOpen(demo);
   }
@@ -359,13 +415,15 @@ export default function Home() {
         previewDisabled={saving || !ready}
         onNavigate={(v) => {
           if (busyRef.current) return;
-          if (v === 'assessment') requestOpen(newAssessment());
+          if (v === 'assessment') requestNew();
           else go(v);
         }}
       >
         <NoticeToast message={notice} onClear={clearNotice} />
         {error && (
           <Banner
+            ref={errorRef}
+            tabIndex={-1}
             status="error"
             title={error}
             isDismissable
@@ -404,9 +462,11 @@ export default function Home() {
               }
             />
             <WorkflowSteps />
-            <VStack className="xl:hidden">
-              <ScoreCard record={record} disabled={saving || !ready} />
-            </VStack>
+            {record.modelVersion === 'demo-0.1' && (
+              <VStack className="xl:hidden">
+                <ScoreCard record={record} disabled={saving || !ready} />
+              </VStack>
+            )}
             {/* Below xl the score moves above the form, and supporting details follow it.
               At xl the form and 340px summary rail share the content region. */}
             <Grid
@@ -416,6 +476,7 @@ export default function Home() {
             >
               <VStack gap={4} className="min-w-0" aria-busy={saving}>
                 <PatientContext
+                  key={record.id}
                   record={record}
                   onChange={update}
                   disabled={saving || !ready}
@@ -462,7 +523,9 @@ export default function Home() {
                 gap={4}
                 className="min-w-0 xl:sticky xl:top-24"
               >
-                <VStack className="hidden xl:flex">
+                <VStack
+                  className={r.scoringPending ? undefined : 'hidden xl:flex'}
+                >
                   <ScoreCard
                     record={record}
                     onResult={() => void showResult()}
@@ -497,7 +560,7 @@ export default function Home() {
             error={historyError}
             onRetry={() => void loadHistory()}
             onOpen={requestOpen}
-            onNew={() => requestOpen(newAssessment())}
+            onNew={() => requestNew()}
           />
         )}
         {view === 'methodology' && <MethodologyView onExample={openExample} />}
@@ -562,7 +625,7 @@ export default function Home() {
         </Dialog>
       </AppShell>
       <section id="print-output" className="print-view">
-        <header className="print-brand">GenCompass · LUMEN GENOMICS</header>
+        <header className="print-brand">GenCompass</header>
         <pre>{printContent}</pre>
       </section>
     </>

@@ -1,4 +1,9 @@
-import { categories, calculate, type Assessment, type Answers } from './model';
+import {
+  categories,
+  calculateAssessment,
+  type Assessment,
+  type Answers,
+} from './model';
 import { validateAssessment } from './validation';
 type Tool = {
   name: string;
@@ -14,6 +19,25 @@ type Context = {
     options: { signal: AbortSignal },
   ) => void | Promise<void>;
 };
+function publishedResult(record: Assessment) {
+  const result = calculateAssessment(record);
+  if (!result.scoringPending) return result;
+  return {
+    ...result,
+    familyModifier: { ...result.familyModifier, points: null, bonus: null },
+    contributions: result.contributions.map((item) => ({
+      ...item,
+      points: null,
+      category: {
+        ...item.category,
+        criteria: item.category.criteria.map((c) => ({ ...c, points: null })),
+      },
+      selected: item.selected.map((c) => ({ ...c, points: null })),
+    })),
+    urgent: result.urgent.map((c) => ({ ...c, points: null })),
+  };
+}
+
 export function registerClinicalTools(
   read: () => Assessment,
   update: (a: Answers) => void,
@@ -28,7 +52,7 @@ export function registerClinicalTools(
       name: 'get_gencompass_assessment',
       title: 'Прочитать текущую оценку',
       description:
-        'Return the current demo assessment, available categories, allowed criterion IDs and demo score. Scores are not clinically validated.',
+        'Return the current demo assessment, available categories, allowed criterion IDs and versioned result. Pending models return no numerical score; legacy demo scores are not clinically validated.',
       inputSchema: {
         type: 'object',
         properties: {},
@@ -46,8 +70,14 @@ export function registerClinicalTools(
         const record = read();
         return {
           assessment: record,
-          result: calculate(record.answers),
-          categories,
+          result: publishedResult(record),
+          categories: categories.map((c) => ({
+            ...c,
+            criteria: c.criteria.map((item) => ({
+              ...item,
+              points: record.modelVersion === 'demo-0.1' ? item.points : null,
+            })),
+          })),
         };
       },
     },
@@ -62,7 +92,7 @@ export function registerClinicalTools(
           answers: {
             type: 'object',
             description:
-              'Category IDs mapped to {status:selected|none|unknown, selected:criterionId[]}.',
+              'Category IDs mapped to {status:selected|none|unknown|normal (normal is laboratory-only in review-0.2), selected:criterionId[]}.',
           },
         },
         required: ['answers'],
@@ -83,7 +113,7 @@ export function registerClinicalTools(
           status: 'draft',
         });
         update(candidate.answers);
-        return { staged: true, result: calculate(read().answers) };
+        return { staged: true, result: publishedResult(read()) };
       },
     },
   ];

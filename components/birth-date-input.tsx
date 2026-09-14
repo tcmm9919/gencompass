@@ -33,6 +33,7 @@ type BirthDateInputProps = {
   max?: ISODateString;
   onChange: (value?: string) => void;
   isDisabled?: boolean;
+  isRequired?: boolean;
 };
 
 function formatDate(value?: string) {
@@ -59,6 +60,7 @@ export function BirthDateInput({
   max,
   onChange,
   isDisabled = false,
+  isRequired = false,
 }: BirthDateInputProps) {
   const maximum = max && validDate(max) ? max : (localDate() as ISODateString);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -147,6 +149,7 @@ export function BirthDateInput({
         ref={triggerRef}
         label="Дата рождения"
         isDisabled={isDisabled}
+        isRequired={isRequired}
         size="lg"
         status={error ? { type: 'error', message: error } : undefined}
         className="w-full"
@@ -155,6 +158,7 @@ export function BirthDateInput({
           ref={inputRef}
           label=""
           isLabelHidden
+          isRequired={isRequired}
           placeholder="дд.мм.гггг"
           value={draft}
           onChange={(text) => {

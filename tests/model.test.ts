@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   categories,
   calculate,
-  newAssessment,
+  newAssessment as createCurrentAssessment,
   toggleCriterion,
   type Answers,
 } from '../lib/model';
@@ -11,6 +11,13 @@ import { validateAssessment } from '../lib/validation';
 import { reportText } from '../lib/report';
 import { registerClinicalTools } from '../lib/webmcp';
 import './browser-store.test';
+import './model-version.test';
+import './clinician-profile.test';
+// Existing tests below describe the frozen demonstration model.
+const newAssessment = () => ({
+  ...createCurrentAssessment(),
+  modelVersion: 'demo-0.1' as const,
+});
 const selected = (...selected: string[]) => ({
   status: 'selected' as const,
   selected,

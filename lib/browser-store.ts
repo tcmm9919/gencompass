@@ -1,3 +1,4 @@
+import { assessmentCode } from './assessment-code';
 import type { Assessment } from './model';
 import { validateAssessment } from './validation';
 
@@ -25,7 +26,7 @@ export function browserAssessmentStore(storage: Storage) {
       const record = validateAssessment(value);
       const saved = {
         ...record,
-        code: record.code || 'GC-' + record.id.slice(0, 6).toUpperCase(),
+        code: assessmentCode(record),
         updatedAt: new Date().toISOString(),
       };
       storage.setItem(prefix + saved.id, JSON.stringify(saved));

@@ -1,13 +1,14 @@
+import { bibliography } from './bibliography';
 import { patientName, ageLabel } from './patient';
 import {
-  calculate,
+  calculateAssessment,
   categories,
   sources,
   type Assessment,
   zoneNames,
 } from './model';
 export function reportText(record: Assessment, referral = false, comment = '') {
-  const r = calculate(record.answers);
+  const r = calculateAssessment(record);
   const ids = new Set(
     r.contributions
       .filter((c) => c.selected.length)
@@ -15,7 +16,7 @@ export function reportText(record: Assessment, referral = false, comment = '') {
   );
   return [
     referral ? 'ШАБЛОН НАПРАВЛЕНИЯ К ГЕНЕТИКУ' : 'РЕЗУЛЬТАТ ОЦЕНКИ GENCOMPASS',
-    'Lumen Genomics · Демонстрационный прототип',
+    'GenCompass · Демонстрационный прототип',
     '',
     'ВНИМАНИЕ: учебный пример. Баллы и пороги не валидированы для клинических решений. Не является диагнозом или вероятностью заболевания.',
     '',
@@ -46,11 +47,13 @@ export function reportText(record: Assessment, referral = false, comment = '') {
           ? 'Не указан'
           : record.age + ' лет'),
     'Дата формирования: ' + new Date().toLocaleDateString('ru-RU'),
-    'Модель: demo-0.1',
+    'Модель: ' + record.modelVersion + ' · ' + r.modelLabel,
     'Демо-индекс: ' +
-      (r.hasData
-        ? r.score + '/100 · ' + zoneNames[r.zone]
-        : 'Недостаточно данных'),
+      (r.scoringPending
+        ? 'Не рассчитан: числовая модель ожидает клинического утверждения'
+        : r.hasData
+          ? r.score + '/100 · ' + zoneNames[r.zone]
+          : 'Недостаточно данных'),
     'Известные данные: ' +
       r.known +
       ' из 8 категорий; просмотрено: ' +
@@ -68,17 +71,35 @@ export function reportText(record: Assessment, referral = false, comment = '') {
           ? 'Не заполнено'
           : a.status === 'unknown'
             ? 'Данных недостаточно'
-            : a.status === 'none'
-              ? 'Признаки не выявлены'
-              : item.selected
-                  .map((s) => s.label + ' (демовес ' + s.points + ')')
-                  .join('; ') +
-                '; вклад категории ' +
-                item.points)
+            : a.status === 'normal'
+              ? 'Норма на момент исследования; не исключает метаболическое заболевание'
+              : a.status === 'none'
+                ? 'Признаки не выявлены'
+                : item.selected
+                    .map(
+                      (s) =>
+                        s.label +
+                        (r.scoringPending ? '' : ' (демовес ' + s.points + ')'),
+                    )
+                    .join('; ') +
+                  (r.scoringPending ? '' : '; вклад категории ' + item.points))
       );
     }),
     '',
-    'Вклады внутри категории не суммируются: используется максимальный выбранный вес. Пороги 25/50 — демонстрационные. Незаполненное и неизвестное не равно отсутствию признаков.',
+    ...(r.scoringPending
+      ? [
+          'Числовые веса и пороги новой модели не утверждены. Индекс и уровень не выдаются.',
+          ...r.pendingReasons,
+          ...(record.answers.consanguinity?.status === 'selected'
+            ? [
+                'Консангвинность учитывается только в сочетании с семейным анамнезом; самостоятельные баллы не начисляются. Коэффициент ожидает утверждения.',
+              ]
+            : []),
+          'Нормальные лабораторные показатели на момент исследования не исключают метаболическое заболевание. Неизвестное не равно отсутствию признаков.',
+        ]
+      : [
+          'Вклады внутри категории не суммируются: используется максимальный выбранный вес. Пороги 25/50 — демонстрационные. Незаполненное и неизвестное не равно отсутствию признаков.',
+        ]),
     ...r.urgent.map((c) => 'КЛИНИЧЕСКОЕ ПРИМЕЧАНИЕ: ' + c.urgent),
     ...(record.notes ? ['', 'Примечание к случаю: ' + record.notes] : []),
     ...(referral
@@ -98,6 +119,16 @@ export function reportText(record: Assessment, referral = false, comment = '') {
     ...sources
       .filter((s) => ids.has(s.id))
       .map((s) => s.organization + '. ' + s.title + '. ' + s.url),
+    ...(r.scoringPending
+      ? bibliography
+          .filter((c) => record.answers[c.id]?.status === 'selected')
+          .flatMap((c) =>
+            c.entries
+              .filter((e) => e.sourceUrl)
+              .slice(0, 2)
+              .map((e) => e.citation.replace(/[.]$/, '') + '. ' + e.sourceUrl),
+          )
+      : []),
     '',
     'GenCompass не заменяет клиническое решение и консультацию генетика.',
   ].join('\n');

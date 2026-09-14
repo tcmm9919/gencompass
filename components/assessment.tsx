@@ -6,28 +6,18 @@ import {
   Compass,
   Info,
   ArrowRight,
-  Stethoscope,
-  UserRound,
 } from 'lucide-react';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
-import { TextInput } from '@astryxdesign/core/TextInput';
-import { NumberInput } from '@astryxdesign/core/NumberInput';
-import { DateInput } from '@astryxdesign/core/DateInput';
-import type { ISODateString } from '@astryxdesign/core/utils';
-import { Selector } from '@astryxdesign/core/Selector';
 import { RadioList, RadioListItem } from '@astryxdesign/core/RadioList';
 import { CheckboxInput } from '@astryxdesign/core/CheckboxInput';
 import { Tooltip } from '@astryxdesign/core/Tooltip';
 import { ProgressBar } from '@astryxdesign/core/ProgressBar';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
-import { Grid } from '@astryxdesign/core/Grid';
 import { Section } from '@astryxdesign/core/Section';
 import { InterfaceRegion } from '@/components/workflow-ui';
-import { BirthDateInput } from '@/components/birth-date-input';
 import { Card } from '@astryxdesign/core/Card';
-import { FormLayout } from '@astryxdesign/core/FormLayout';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
@@ -35,26 +25,16 @@ import { Banner } from '@astryxdesign/core/Banner';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { Link } from '@astryxdesign/core/Link';
+import { bibliography } from '@/lib/bibliography';
 import {
   categories,
-  calculate,
+  calculateAssessment,
   toggleCriterion,
   sources,
   zoneNames,
   type Assessment,
   type Category,
 } from '@/lib/model';
-import {
-  ageAt,
-  ageLabel,
-  localDate,
-  type Patient,
-  type Visit,
-} from '@/lib/patient';
-
-const displayDate = (date: ISODateString) =>
-  date.split('-').reverse().join('.');
-const iso = (date: string) => (date ? (date as ISODateString) : undefined);
 export const riskVariant = (zone: string) =>
   zone === 'low'
     ? 'success'
@@ -70,226 +50,12 @@ type FormProps = {
   disabled?: boolean;
 };
 
-export function PatientContext({
-  record,
-  onChange,
-  disabled = false,
-}: FormProps) {
-  const { patient, visit } = record;
-  const changePatient = (field: keyof Patient, value: string) => {
-    const next = { ...patient, [field]: value };
-    const age = next.birthDate
-      ? ageAt(next.birthDate, visit.date || localDate())
-      : null;
-    onChange({
-      ...record,
-      patient: next,
-      age: age ? String(age.years) : record.age,
-    });
-  };
-  const changeVisit = (field: keyof Visit, value: string) => {
-    const next = { ...visit, [field]: value };
-    const age = patient.birthDate
-      ? ageAt(patient.birthDate, next.date || localDate())
-      : null;
-    onChange({
-      ...record,
-      visit: next,
-      age: age ? String(age.years) : record.age,
-    });
-  };
-  return (
-    <VStack gap={4}>
-      <InterfaceRegion aria-labelledby="patient-heading">
-        <VStack gap={5}>
-          <HStack gap={3} align="center">
-            <UserRound className="size-5 shrink-0 text-secondary" />
-            <Heading level={2} id="patient-heading">
-              Данные пациента
-            </Heading>
-          </HStack>
-          <FormLayout defaultOptionality="optional" className="gap-5">
-            <Grid columns={{ minWidth: 220, max: 2 }} gap={5}>
-              {(
-                [
-                  ['lastName', 'Фамилия', 'Введите фамилию', 80],
-                  ['firstName', 'Имя', 'Введите имя', 80],
-                  ['middleName', 'Отчество', 'При наличии', 80],
-                  [
-                    'recordNumber',
-                    '№ медицинской карты',
-                    'Номер карты пациента',
-                    60,
-                  ],
-                ] as const
-              ).map(([key, label, placeholder, limit]) => (
-                <TextInput
-                  key={key}
-                  label={label}
-                  placeholder={placeholder}
-                  value={patient[key]}
-                  onChange={(value) =>
-                    changePatient(key, value.slice(0, limit))
-                  }
-                  isDisabled={disabled}
-                  size="lg"
-                  width="100%"
-                />
-              ))}
-              <BirthDateInput
-                value={patient.birthDate || undefined}
-                max={iso(visit.date || localDate())}
-                onChange={(value) => changePatient('birthDate', value ?? '')}
-                isDisabled={disabled}
-              />
-              <Selector
-                label="Пол"
-                value={patient.sex}
-                onChange={(value) => changePatient('sex', value)}
-                options={[
-                  { value: '', label: 'Не указан' },
-                  { value: 'female', label: 'Женский' },
-                  { value: 'male', label: 'Мужской' },
-                  { value: 'unknown', label: 'Не определён' },
-                ]}
-                isDisabled={disabled}
-                size="lg"
-                width="100%"
-              />
-              {patient.birthDate ? (
-                <TextInput
-                  label="Возраст"
-                  labelTooltip="Рассчитан по дате рождения на дату приёма"
-                  value={ageLabel(patient.birthDate, visit.date || localDate())}
-                  isReadOnly
-                  size="lg"
-                  width="100%"
-                />
-              ) : (
-                <NumberInput
-                  label="Возраст"
-                  placeholder="Полных лет"
-                  value={record.age === '' ? null : Number(record.age)}
-                  onChange={(value) =>
-                    onChange({
-                      ...record,
-                      age: value === null ? '' : String(value),
-                    })
-                  }
-                  min={0}
-                  max={120}
-                  isIntegerOnly
-                  isWheelEnabled={false}
-                  hasClear
-                  isDisabled={disabled}
-                  size="lg"
-                  width="100%"
-                />
-              )}
-              <TextInput
-                label="Код оценки"
-                placeholder="Присваивается при сохранении"
-                value={record.code}
-                onChange={(value) =>
-                  onChange({ ...record, code: value.slice(0, 40) })
-                }
-                isDisabled={disabled}
-                size="lg"
-                width="100%"
-              />
-            </Grid>
-          </FormLayout>
-        </VStack>
-      </InterfaceRegion>
-      <InterfaceRegion aria-labelledby="visit-heading">
-        <VStack gap={5}>
-          <HStack gap={3} align="center">
-            <Stethoscope className="size-5 shrink-0 text-secondary" />
-            <Heading level={2} id="visit-heading">
-              Данные приёма
-            </Heading>
-          </HStack>
-          <FormLayout defaultOptionality="optional" className="gap-5">
-            <Grid columns={{ minWidth: 220, max: 2 }} gap={5}>
-              <DateInput
-                format={displayDate}
-                label="Дата оценки"
-                value={iso(visit.date)}
-                max={iso(localDate())}
-                onChange={(value) => changeVisit('date', value ?? '')}
-                isDisabled={disabled}
-                hasClear
-                size="lg"
-                width="100%"
-              />
-              <Selector
-                label="Тип приёма"
-                value={visit.type}
-                onChange={(value) => changeVisit('type', value)}
-                options={[
-                  { value: 'initial', label: 'Первичный' },
-                  { value: 'followup', label: 'Повторный' },
-                ]}
-                isDisabled={disabled}
-                size="lg"
-                width="100%"
-              />
-              <TextInput
-                label="Лечащий врач"
-                placeholder="ФИО врача"
-                value={visit.clinician}
-                onChange={(value) =>
-                  changeVisit('clinician', value.slice(0, 160))
-                }
-                isDisabled={disabled}
-                size="lg"
-                width="100%"
-              />
-              <TextInput
-                label="Специальность"
-                placeholder="Например, педиатр"
-                value={visit.specialty}
-                onChange={(value) =>
-                  changeVisit('specialty', value.slice(0, 100))
-                }
-                isDisabled={disabled}
-                size="lg"
-                width="100%"
-              />
-            </Grid>
-            <TextInput
-              label="Медицинская организация"
-              placeholder="Название клиники или отделения"
-              value={visit.clinic}
-              onChange={(value) => changeVisit('clinic', value.slice(0, 180))}
-              isDisabled={disabled}
-              size="lg"
-              width="100%"
-            />
-            <TextInput
-              label="Предварительный диагноз / причина оценки"
-              placeholder="Диагноз, код МКБ или ведущий клинический синдром"
-              value={visit.diagnosis}
-              onChange={(value) =>
-                changeVisit('diagnosis', value.slice(0, 500))
-              }
-              isDisabled={disabled}
-              size="lg"
-              width="100%"
-            />
-          </FormLayout>
-        </VStack>
-      </InterfaceRegion>
-    </VStack>
-  );
-}
-
 export function CriteriaForm({
   record,
   onChange,
   disabled = false,
 }: FormProps) {
-  const result = calculate(record.answers);
+  const result = calculateAssessment(record);
   const answer = (cat: Category, id: string) =>
     onChange({ ...record, answers: toggleCriterion(record.answers, cat, id) });
   return (
@@ -320,9 +86,11 @@ export function CriteriaForm({
                 onClick={(event) => event.stopPropagation()}
               />
             </Tooltip>
-            <Text type="code" color="secondary" className="min-w-8 text-end">
-              +{item.points}
-            </Text>
+            {!result.scoringPending && (
+              <Text type="code" color="secondary" className="min-w-8 text-end">
+                +{item.points}
+              </Text>
+            )}
           </HStack>
         );
         return (
@@ -425,7 +193,12 @@ export function CriteriaForm({
                       : (current?.status ?? '')
                   }
                   onChange={(status) => {
-                    if (status !== 'none' && status !== 'unknown') return;
+                    if (
+                      status !== 'none' &&
+                      status !== 'unknown' &&
+                      status !== 'normal'
+                    )
+                      return;
                     onChange({
                       ...record,
                       answers: {
@@ -438,16 +211,22 @@ export function CriteriaForm({
                   width="auto"
                   className="min-w-0 max-w-full [&_.astryx-radio-list]:flex-wrap [&_.astryx-radio-list]:gap-4"
                 >
-                  {(['none', 'unknown'] as const).map((status) => (
+                  {(cat.id === 'laboratory' &&
+                  record.modelVersion !== 'demo-0.1'
+                    ? (['normal', 'unknown'] as const)
+                    : (['none', 'unknown'] as const)
+                  ).map((status) => (
                     <RadioListItem
                       key={status}
                       value={status}
                       label={
-                        status === 'none'
-                          ? cat.id === 'onset'
-                            ? 'Симптомы не выявлены'
-                            : 'Признаки не выявлены'
-                          : 'Данных недостаточно'
+                        status === 'normal'
+                          ? 'Норма на момент исследования'
+                          : status === 'none'
+                            ? cat.id === 'onset'
+                              ? 'Симптомы не выявлены'
+                              : 'Признаки не выявлены'
+                            : 'Данных недостаточно'
                       }
                       onClick={() => {
                         if (disabled || current?.status !== status) return;
@@ -507,7 +286,7 @@ export function ScoreCard({
   final?: boolean;
   disabled?: boolean;
 }) {
-  const r = calculate(record.answers);
+  const r = calculateAssessment(record);
   return (
     <Card padding={0} variant="default" className="w-full">
       <VStack gap={5} className="p-4 sm:p-6">
@@ -520,15 +299,21 @@ export function ScoreCard({
         <VStack gap={3} aria-live="polite" aria-atomic="true">
           <HStack gap={2} align="end">
             <Text
-              type={r.hasData ? 'display-1' : 'large'}
+              type={r.hasData && !r.scoringPending ? 'display-1' : 'large'}
               weight="semibold"
               hasTabularNumbers
             >
-              {r.hasData ? r.score : 'Нет данных'}
+              {r.scoringPending
+                ? 'Индекс не рассчитан'
+                : r.hasData
+                  ? r.score
+                  : 'Нет данных'}
             </Text>
-            {r.hasData && <Text color="secondary">из 100</Text>}
+            {r.hasData && !r.scoringPending && (
+              <Text color="secondary">из 100</Text>
+            )}
           </HStack>
-          {r.hasData && (
+          {r.hasData && !r.scoringPending && (
             <HStack gap={2} align="center">
               <StatusDot
                 variant={riskVariant(r.zone)}
@@ -538,24 +323,32 @@ export function ScoreCard({
             </HStack>
           )}
         </VStack>
-        <VStack gap={3}>
-          <ProgressBar
-            label="Демонстрационный индекс"
-            isLabelHidden
-            value={r.score}
-            max={100}
-            formatValueLabel={() =>
-              r.hasData ? `${r.score} из 100` : 'Нет данных'
-            }
-            variant={r.hasData ? riskVariant(r.zone) : 'neutral'}
-            isDisabled={!r.hasData}
-          />
-          <HStack justify="between" gap={2}>
-            <Text type="supporting">0–24 · Низкий</Text>
-            <Text type="supporting">25–49</Text>
-            <Text type="supporting">50–100 · Высокий</Text>
-          </HStack>
-        </VStack>
+        {!r.scoringPending && (
+          <VStack gap={3}>
+            <ProgressBar
+              label="Демонстрационный индекс"
+              isLabelHidden
+              value={r.score ?? 0}
+              max={100}
+              formatValueLabel={() =>
+                r.hasData ? `${r.score} из 100` : 'Нет данных'
+              }
+              variant={r.hasData ? riskVariant(r.zone) : 'neutral'}
+              isDisabled={!r.hasData}
+            />
+            <HStack justify="between" gap={2}>
+              <Text type="supporting">0–24 · Низкий</Text>
+              <Text type="supporting">25–49</Text>
+              <Text type="supporting">50–100 · Высокий</Text>
+            </HStack>
+          </VStack>
+        )}
+        {r.scoringPending && (
+          <Text color="secondary">
+            Числовая модель ожидает клинического утверждения. Признаки,
+            обоснование и направление доступны.
+          </Text>
+        )}
         <Text color="secondary">
           {r.hasData
             ? `Результат по известным данным: ${r.known} из 8 категорий. Незаполненные категории не считаются отрицательным ответом.`
@@ -573,7 +366,7 @@ export function ScoreCard({
           />
         )}
         <Text type="supporting">
-          Демонстрационная модель · не валидирована. Индекс не является
+          {r.modelLabel}. Модель не валидирована; индекс не является
           вероятностью диагноза.
         </Text>
       </VStack>
@@ -588,9 +381,10 @@ export function Explainability({
   record: Assessment;
   expanded?: boolean;
 }) {
-  const items = calculate(record.answers)
-    .contributions.filter((c) => c.selected.length)
-    .sort((a, b) => b.points - a.points);
+  const result = calculateAssessment(record);
+  const items = result.contributions
+    .filter((c) => c.selected.length)
+    .sort((a, b) => (result.scoringPending ? 0 : b.points - a.points));
   return (
     <InterfaceRegion aria-label="Обоснование результата">
       <VStack gap={4}>
@@ -598,6 +392,12 @@ export function Explainability({
           <BookOpen className="size-5 shrink-0 text-secondary" />
           <Heading level={3}>Что влияет на оценку</Heading>
         </HStack>
+        {record.visit.diagnosis && (
+          <VStack gap={1}>
+            <Text weight="medium">Причина оценки</Text>
+            <Text color="secondary">{record.visit.diagnosis}</Text>
+          </VStack>
+        )}
         {!items.length ? (
           <EmptyState
             isCompact
@@ -619,7 +419,9 @@ export function Explainability({
                   trigger={
                     <HStack gap={3} justify="between" className="w-full">
                       <Text weight="medium">{item.category.title}</Text>
-                      <Text type="code">+{item.points}</Text>
+                      {!result.scoringPending && (
+                        <Text type="code">+{item.points}</Text>
+                      )}
                     </HStack>
                   }
                 >
@@ -627,12 +429,40 @@ export function Explainability({
                     {item.selected.map((c) => (
                       <Text key={c.id}>
                         {c.label}{' '}
-                        <Text color="secondary">(вес {c.points})</Text>
+                        {!result.scoringPending && (
+                          <Text color="secondary">(вес {c.points})</Text>
+                        )}
                       </Text>
                     ))}
                     <Text type="supporting">
-                      Учитывается максимальный вес: {item.points} баллов.
+                      {result.scoringPending
+                        ? item.category.id === 'consanguinity'
+                          ? 'Консангвинность повышает вероятность аутосомно-рецессивного типа наследования при подтверждении генетического диагноза и учитывается в сочетании с семейным анамнезом. Самостоятельные баллы не начисляются; коэффициент ожидает утверждения.'
+                          : item.category.id === 'neurodevelopment'
+                            ? 'Регресс рассматривается отдельно от задержки развития и требует клинической оценки независимо от индекса. Новый вес ожидает утверждения.'
+                            : item.category.id === 'treatment'
+                              ? 'Ответ на терапию рассматривается вместе с неврологическими проявлениями. Правило усиления пока не утверждено.'
+                              : 'Признаки учтены в обосновании. Числовые вклады будут доступны после утверждения новой модели.'
+                        : `Учитывается максимальный вес: ${item.points} баллов.`}
                     </Text>
+                    {result.scoringPending && (
+                      <VStack gap={2}>
+                        {bibliography
+                          .find((category) => category.id === item.category.id)
+                          ?.entries.filter((entry) => entry.sourceUrl)
+                          .slice(0, 2)
+                          .map((entry) => (
+                            <Link
+                              key={entry.citation}
+                              href={entry.sourceUrl!}
+                              isExternalLink
+                              newTabLabel="Открывается в новой вкладке"
+                            >
+                              {entry.citation}
+                            </Link>
+                          ))}
+                      </VStack>
+                    )}
                     <HStack gap={3} wrap="wrap">
                       {sources
                         .filter((s) => item.category.sourceIds.includes(s.id))
@@ -660,7 +490,7 @@ export function Explainability({
 }
 
 export function UrgentFlags({ record }: { record: Assessment }) {
-  const urgent = calculate(record.answers).urgent;
+  const urgent = calculateAssessment(record).urgent;
   return urgent.length ? (
     <VStack gap={3}>
       {urgent.map((c) => (

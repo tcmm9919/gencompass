@@ -7,7 +7,13 @@ import {
   type Patient,
   type Visit,
 } from './patient';
-import { categories, calculate, type Assessment, type Answers } from './model';
+import {
+  categories,
+  calculateAssessment,
+  type Answer,
+  type Assessment,
+  type Answers,
+} from './model';
 export function validateAssessment(
   value: unknown,
   { recoverDraft = false }: { recoverDraft?: boolean } = {},
@@ -36,7 +42,7 @@ export function validateAssessment(
     throw new Error('Примечание: максимум 2000 символов.');
   if (v.status !== 'draft' && v.status !== 'complete')
     throw new Error('Некорректный статус.');
-  if (v.modelVersion !== 'demo-0.1')
+  if (v.modelVersion !== 'demo-0.1' && v.modelVersion !== 'review-0.2')
     throw new Error('Версия модели не поддерживается.');
   if (!v.answers || typeof v.answers !== 'object' || Array.isArray(v.answers))
     throw new Error('Некорректные ответы.');
@@ -47,10 +53,25 @@ export function validateAssessment(
       throw new Error('Неизвестная категория.');
     const a = raw as Record<string, unknown>;
     if (
-      !['selected', 'none', 'unknown'].includes(String(a.status)) ||
+      !['selected', 'none', 'unknown', 'normal'].includes(String(a.status)) ||
       !Array.isArray(a.selected)
     )
       throw new Error('Некорректный ответ.');
+    if (
+      a.status === 'normal' &&
+      (key !== 'laboratory' || v.modelVersion !== 'review-0.2')
+    )
+      throw new Error(
+        'Норма на момент исследования доступна только для лабораторной категории новой модели.',
+      );
+    if (
+      a.status === 'none' &&
+      key === 'laboratory' &&
+      v.modelVersion === 'review-0.2'
+    )
+      throw new Error(
+        'Для лабораторных данных укажите норму на момент исследования или недостаточность данных.',
+      );
     const selected = a.selected;
     if (
       selected.some(
@@ -70,7 +91,7 @@ export function validateAssessment(
         'Неизвестный или отрицательный ответ не может содержать признаки.',
       );
     answers[key] = {
-      status: a.status as 'selected' | 'none' | 'unknown',
+      status: a.status as Answer['status'],
       selected: selected as string[],
     };
   }
@@ -113,21 +134,39 @@ export function validateAssessment(
     : null;
   if (!recoverDraft && computedAge && computedAge.years > 120)
     throw new Error('Возраст пациента не может превышать 120 лет.');
-  if (!recoverDraft && v.status === 'complete' && !calculate(answers).hasData)
+  if (
+    !recoverDraft &&
+    v.status === 'complete' &&
+    v.modelVersion === 'review-0.2'
+  ) {
+    if (!patient.birthDate) throw new Error('Укажите дату рождения пациента.');
+    if (!patient.sex) throw new Error('Укажите пол пациента.');
+    if (!visit.diagnosis)
+      throw new Error('Укажите предварительный диагноз или причину оценки.');
+  }
+  if (
+    !recoverDraft &&
+    v.status === 'complete' &&
+    !calculateAssessment({ answers, modelVersion: v.modelVersion }).hasData
+  )
     throw new Error(
       'Для результата нужна хотя бы одна категория с известными данными.',
     );
   return {
     id: v.id,
     code: v.code.trim(),
-    age: computedAge ? String(computedAge.years) : v.age,
+    age: computedAge
+      ? String(computedAge.years)
+      : v.modelVersion === 'review-0.2' && !recoverDraft
+        ? ''
+        : v.age,
     patient,
     visit,
     notes: v.notes.trim(),
     answers,
     status: v.status,
     updatedAt: typeof v.updatedAt === 'string' ? v.updatedAt : '',
-    modelVersion: 'demo-0.1',
+    modelVersion: v.modelVersion,
   };
 }
 

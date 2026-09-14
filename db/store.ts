@@ -1,3 +1,4 @@
+import { assessmentCode } from '../lib/assessment-code';
 import { env } from 'cloudflare:workers';
 import { type Assessment } from '../lib/model';
 export function assessmentDb() {
@@ -13,7 +14,7 @@ export async function listAssessments() {
 export async function saveAssessment(record: Assessment) {
   const saved = {
     ...record,
-    code: record.code || 'GC-' + record.id.slice(0, 6).toUpperCase(),
+    code: assessmentCode(record),
     updatedAt: new Date().toISOString(),
   };
   await assessmentDb()

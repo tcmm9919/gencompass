@@ -46,9 +46,16 @@ import {
   PageHeading,
   WorkflowSteps,
 } from '@/components/workflow-ui';
+import { Collapsible } from '@astryxdesign/core/Collapsible';
+import { bibliography } from '@/lib/bibliography';
 import { browserStorageMode } from '@/lib/persistence';
 import { patientName, ageLabel } from '@/lib/patient';
-import { calculate, categories, sources, type Assessment } from '@/lib/model';
+import {
+  calculateAssessment,
+  categories,
+  sources,
+  type Assessment,
+} from '@/lib/model';
 
 export function ResultView({
   record,
@@ -63,12 +70,12 @@ export function ResultView({
   onPrint: () => void;
   onExport: () => void;
 }) {
-  const r = calculate(record.answers);
+  const r = calculateAssessment(record);
   return (
     <>
       <PageHeading
         title="Оценка клинических признаков"
-        description={`${patientName(record.patient) || record.code || 'Новый случай'} · ${r.known} из 8 категорий с известными данными`}
+        description={`${record.code || 'Новый случай'}${patientName(record.patient) ? ' · ' + patientName(record.patient) : ''} · ${r.known} из 8 категорий с известными данными`}
         actions={
           <Button
             label="Уточнить данные"
@@ -94,13 +101,14 @@ export function ResultView({
                 <Heading level={2}>Следующий шаг</Heading>
               </HStack>
               <Heading level={3}>
-                {r.score >= 25
+                {r.scoringPending || (r.score ?? 0) >= 25
                   ? 'Подготовьте обоснование консультации'
                   : 'Сопоставьте результат с клинической картиной'}
               </Heading>
               <Text color="secondary">
-                Решение о консультации и её срочности принимает врач. Даже
-                низкий демо-индекс не исключает генетическое заболевание.
+                Решение о консультации и её срочности принимает врач по
+                клинической картине. Индекс не исключает генетическое
+                заболевание.
               </Text>
               <Button
                 label="Направить к генетику"
@@ -162,9 +170,11 @@ export function ResultView({
                       ? 'Не заполнено'
                       : answer.status === 'unknown'
                         ? 'Нет данных'
-                        : answer.status === 'none'
-                          ? 'Не выявлены'
-                          : 'Есть данные';
+                        : answer.status === 'normal'
+                          ? 'Норма на момент исследования'
+                          : answer.status === 'none'
+                            ? 'Не выявлены'
+                            : 'Есть данные';
                     return (
                       <TableRow key={cat.id}>
                         <TableCell>
@@ -174,7 +184,9 @@ export function ResultView({
                           <Token
                             label={label}
                             color={
-                              answer && answer.status !== 'unknown'
+                              answer &&
+                              answer.status !== 'unknown' &&
+                              answer.status !== 'normal'
                                 ? 'green'
                                 : 'gray'
                             }
@@ -271,8 +283,10 @@ export function HistoryView({
       header: 'Индекс',
       width: proportional(1, { minWidth: 140 }),
       renderCell: (item) => {
-        const r = calculate(item.answers);
-        return r.hasData ? (
+        const r = calculateAssessment(item);
+        return r.scoringPending ? (
+          <Text color="secondary">Ожидает утверждения</Text>
+        ) : r.hasData ? (
           <Text hasTabularNumbers weight="semibold">
             {r.score}
             <Text color="secondary"> / 100</Text>
@@ -287,7 +301,7 @@ export function HistoryView({
       header: 'Категории',
       width: proportional(1),
       renderCell: (item) => (
-        <Text>{calculate(item.answers).reviewed} из 8</Text>
+        <Text>{calculateAssessment(item).reviewed} из 8</Text>
       ),
     },
     {
@@ -424,37 +438,42 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
           <InterfaceRegion>
             <VStack gap={4}>
               <Text type="supporting">01 / ПРИНЦИП</Text>
-              <Heading level={2}>Каждый балл можно объяснить</Heading>
+              <Heading level={2}>Признаки и клинический контекст</Heading>
               <Text>
-                Отмеченные клинические признаки объединены в восемь категорий. В
-                каждой категории учитывается только наибольший вес выбранного
-                признака. Затем вклады категорий суммируются.
+                Новые оценки используют версию review-0.2. Числовой индекс не
+                рассчитывается до клинического утверждения весов, модификаторов
+                и порогов. Доступны выбранные признаки, предупреждения и
+                направление.
               </Text>
-              <Section variant="muted" padding={4}>
-                <HStack gap={3} wrap="wrap">
-                  <Text weight="medium">Максимум в каждой категории</Text>
-                  <Plus className="size-4" />
-                  <Text weight="medium">Сумма 8 вкладов</Text>
-                  <ArrowRight className="size-4" />
-                  <Text weight="semibold">0–100 баллов</Text>
-                </HStack>
-              </Section>
+              <Text>
+                Кровнородство учитывается в сочетании с семейным анамнезом и не
+                даёт самостоятельных баллов. Для регресса требуется наибольший
+                вес; возможное усиление неврологических признаков
+                резистентностью к лечению ещё рассматривается.
+              </Text>
+              <Text>
+                Пол и дата рождения обязательны при завершении новой оценки.
+                Возраст вычисляется на дату оценки и не заменяет возраст дебюта
+                симптомов. Влияние пола и возраста на числовую формулу не
+                утверждено.
+              </Text>
               <Text>
                 Неизвестный ответ и незаполненная категория не равны отсутствию
-                признаков. Поэтому рядом с индексом всегда показывается полнота
-                данных.
+                признаков. Норма лабораторных показателей на момент исследования
+                — отдельное состояние и не исключает метаболическое заболевание.
+                Полнота данных показывается отдельно.
               </Text>
             </VStack>
           </InterfaceRegion>
           <InterfaceRegion>
             <VStack gap={4}>
               <Text type="supporting">02 / РАСЧЁТ</Text>
-              <Heading level={2}>
-                Клинические признаки. Демонстрационные веса.
-              </Heading>
+              <Heading level={2}>Архивная модель demo-0.1</Heading>
               <Text>
-                Веса и пороги используются для демонстрации расчёта. Модель не
-                валидирована и не показывает вероятность заболевания.
+                Эта шкала сохраняется только для ранее созданных оценок
+                demo-0.1. Внутри категории используется максимальный вес, затем
+                вклады суммируются. Старые результаты не пересчитываются по
+                новой модели.
               </Text>
               <Table
                 density="balanced"
@@ -531,6 +550,41 @@ export function MethodologyView({ onExample }: { onExample: () => void }) {
               Источники описывают клинический контекст. Они не подтверждают
               числовые веса GenCompass.
             </Text>
+            <Text type="supporting">
+              Аннотации предоставлены автором ТЗ. Это 56 записей; часть
+              исследований повторяется в нескольких категориях. Числовые веса
+              ими не валидированы.
+            </Text>
+            {bibliography.map((category) => (
+              <Section
+                key={category.id}
+                padding={0}
+                paddingBlock={3}
+                dividers={['bottom']}
+              >
+                <Collapsible defaultIsOpen={false} trigger={category.title}>
+                  <VStack gap={4} paddingBlockStart={4}>
+                    {category.entries.map((entry, index) => (
+                      <VStack key={index} gap={2}>
+                        {entry.sourceUrl ? (
+                          <Link
+                            href={entry.sourceUrl}
+                            isExternalLink
+                            newTabLabel="Открывается в новой вкладке"
+                          >
+                            {entry.citation}
+                          </Link>
+                        ) : (
+                          <Text weight="medium">{entry.citation}</Text>
+                        )}
+                        <Text color="secondary">{entry.summary}</Text>
+                      </VStack>
+                    ))}
+                  </VStack>
+                </Collapsible>
+              </Section>
+            ))}
+            <Heading level={3}>Справочные рекомендации</Heading>
             {sources.map((source, index) => (
               <Section
                 key={source.id}
