@@ -101,7 +101,7 @@ export function ResultView({
                 <Heading level={2}>Следующий шаг</Heading>
               </HStack>
               <Heading level={3}>
-                {r.scoringPending || (r.score ?? 0) >= 25
+                {r.scoringPending || r.recommendation.referralRecommended
                   ? 'Подготовьте обоснование консультации'
                   : 'Сопоставьте результат с клинической картиной'}
               </Heading>
@@ -255,7 +255,7 @@ export function HistoryView({
           {item.age !== '' && (
             <Text type="supporting">
               {item.patient.birthDate
-                ? ageLabel(item.patient.birthDate, item.visit.date || undefined)
+                ? ageLabel(item.patient.birthDate, item.visit.date)
                 : `${item.age} лет`}
             </Text>
           )}

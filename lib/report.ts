@@ -1,5 +1,6 @@
 import { bibliography } from './bibliography';
 import { patientName, ageLabel } from './patient';
+import { provisionalThresholdsNote } from './recommendation';
 import {
   calculateAssessment,
   categories,
@@ -42,7 +43,7 @@ export function reportText(record: Assessment, referral = false, comment = '') {
     'Код случая: ' + (record.code || 'Не указан'),
     'Возраст: ' +
       (record.patient.birthDate
-        ? ageLabel(record.patient.birthDate, record.visit.date || undefined)
+        ? ageLabel(record.patient.birthDate, record.visit.date)
         : record.age === ''
           ? 'Не указан'
           : record.age + ' лет'),
@@ -54,6 +55,10 @@ export function reportText(record: Assessment, referral = false, comment = '') {
         : r.hasData
           ? r.score + '/100 · ' + zoneNames[r.zone]
           : 'Недостаточно данных'),
+    'Рекомендация консультации генетика: ' + r.recommendation.label,
+    ...(r.recommendation.thresholdsProvisional
+      ? [provisionalThresholdsNote]
+      : []),
     'Известные данные: ' +
       r.known +
       ' из 8 категорий; просмотрено: ' +

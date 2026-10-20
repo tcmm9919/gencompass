@@ -13,6 +13,7 @@ export function fullPreviewAssessment(): Assessment {
     recordNumber: 'DEMO-001',
   };
   demo.age = String(ageAt(demo.patient.birthDate, demo.visit.date)!.years);
+  demo.ageMonths = ageAt(demo.patient.birthDate, demo.visit.date)!.months;
   demo.visit = {
     ...demo.visit,
     type: 'initial',

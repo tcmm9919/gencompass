@@ -48,32 +48,40 @@ export function validDate(value: string) {
     Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
   );
 }
-export function ageAt(birthDate: string, date = localDate()) {
+export function ageAt(birthDate: string, date: string) {
   if (!validDate(birthDate) || !validDate(date) || birthDate > date)
     return null;
   const birth = new Date(birthDate + 'T00:00:00Z');
   const visit = new Date(date + 'T00:00:00Z');
-  let years = visit.getUTCFullYear() - birth.getUTCFullYear();
-  if (
-    visit.getUTCMonth() < birth.getUTCMonth() ||
-    (visit.getUTCMonth() === birth.getUTCMonth() &&
-      visit.getUTCDate() < birth.getUTCDate())
-  )
-    years--;
   const months =
     (visit.getUTCFullYear() - birth.getUTCFullYear()) * 12 +
     visit.getUTCMonth() -
     birth.getUTCMonth() -
     (visit.getUTCDate() < birth.getUTCDate() ? 1 : 0);
   const days = Math.floor((visit.getTime() - birth.getTime()) / 86400000);
-  return { years, months, days };
+  return { years: Math.floor(months / 12), months, days };
 }
-export function ageLabel(birthDate: string, date = localDate()) {
-  const age = ageAt(birthDate, date);
-  if (!age) return '—';
-  if (age.months < 1) return age.days + ' дн.';
-  if (age.years < 2) return age.months + ' мес.';
-  return age.years + ' лет';
+function plural(value: number, one: string, few: string, many: string) {
+  const mod100 = value % 100;
+  const mod10 = value % 10;
+  return mod100 >= 11 && mod100 <= 14
+    ? many
+    : mod10 === 1
+      ? one
+      : mod10 >= 2 && mod10 <= 4
+        ? few
+        : many;
+}
+export function ageMonthsLabel(months: number | null) {
+  if (months === null || !Number.isInteger(months) || months < 0) return '—';
+  const monthLabel = (value: number) =>
+    `${value} ${plural(value, 'месяц', 'месяца', 'месяцев')}`;
+  if (months < 36) return monthLabel(months);
+  const years = Math.floor(months / 12);
+  return `${years} ${plural(years, 'год', 'года', 'лет')} ${monthLabel(months % 12)}`;
+}
+export function ageLabel(birthDate: string, date: string) {
+  return ageMonthsLabel(ageAt(birthDate, date)?.months ?? null);
 }
 export function patientName(patient: Patient) {
   return [patient.lastName, patient.firstName, patient.middleName]

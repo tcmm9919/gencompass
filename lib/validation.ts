@@ -130,7 +130,7 @@ export function validateAssessment(
   )
     throw new Error('Дата рождения должна быть не позднее даты оценки.');
   const computedAge = patient.birthDate
-    ? ageAt(patient.birthDate, visit.date || localDate())
+    ? ageAt(patient.birthDate, visit.date)
     : null;
   if (!recoverDraft && computedAge && computedAge.years > 120)
     throw new Error('Возраст пациента не может превышать 120 лет.');
@@ -140,6 +140,8 @@ export function validateAssessment(
     v.modelVersion === 'review-0.2'
   ) {
     if (!patient.birthDate) throw new Error('Укажите дату рождения пациента.');
+    if (!visit.date)
+      throw new Error('Укажите дату оценки для расчёта возраста.');
     if (!patient.sex) throw new Error('Укажите пол пациента.');
     if (!visit.diagnosis)
       throw new Error('Укажите предварительный диагноз или причину оценки.');
@@ -160,6 +162,7 @@ export function validateAssessment(
       : v.modelVersion === 'review-0.2' && !recoverDraft
         ? ''
         : v.age,
+    ageMonths: computedAge?.months ?? null,
     patient,
     visit,
     notes: v.notes.trim(),

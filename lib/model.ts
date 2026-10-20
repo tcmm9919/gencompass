@@ -2,10 +2,12 @@ import {
   emptyPatient,
   emptyVisit,
   localDate,
+  ageAt,
   type Patient,
   type Visit,
 } from './patient';
 import data from './clinical-data.json';
+import { recommendationFor } from './recommendation';
 import {
   CURRENT_MODEL_VERSION,
   demoWeights,
@@ -40,6 +42,8 @@ export type Assessment = {
   id: string;
   code: string;
   age: string;
+  /** Completed months at visit.date; age is retained in years for old records. */
+  ageMonths: number | null;
   notes: string;
   patient: Patient;
   visit: Visit;
@@ -95,17 +99,27 @@ export function calculate(answers: Answers) {
 }
 /** Version-aware entry point for all saved, displayed and exported assessments. */
 export function calculateAssessment(
-  record: Pick<Assessment, 'answers' | 'modelVersion'>,
+  record: Pick<Assessment, 'answers' | 'modelVersion'> &
+    Partial<Pick<Assessment, 'patient' | 'visit'>>,
 ) {
+  // Dates are authoritative. Never infer precise months from legacy whole years
+  // or trust a cached age after an assessment date has changed.
+  const inputs = {
+    ageMonths:
+      ageAt(record.patient?.birthDate ?? '', record.visit?.date ?? '')
+        ?.months ?? null,
+  };
   const legacy = calculate(record.answers);
   if (record.modelVersion === 'demo-0.1')
     return {
       ...legacy,
+      inputs,
       modelVersion: record.modelVersion,
       scoringPending: false,
       modelLabel: 'Демонстрационная модель 0.1',
       pendingReasons: [] as string[],
       publishedScore: legacy.hasData ? legacy.score : null,
+      recommendation: recommendationFor(legacy.hasData ? legacy.score : null),
       familyModifier: {
         points: legacy.contributions.find((c) => c.category.id === 'family')!
           .points,
@@ -151,6 +165,7 @@ export function calculateAssessment(
   });
   return {
     ...legacy,
+    inputs,
     contributions,
     // No numerical index is released before clinical approval.
     score: null,
@@ -160,6 +175,7 @@ export function calculateAssessment(
     modelLabel: reviewModel.label,
     pendingReasons: [...reviewModel.pendingReasons],
     publishedScore: null,
+    recommendation: recommendationFor(null),
     familyModifier,
   };
 }
@@ -185,6 +201,7 @@ export function newAssessment(): Assessment {
     id: crypto.randomUUID(),
     code: '',
     age: '',
+    ageMonths: null,
     notes: '',
     patient: { ...emptyPatient },
     visit: { ...emptyVisit, date: localDate() },

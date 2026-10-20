@@ -3,6 +3,7 @@ import test from 'node:test';
 import { browserAssessmentStore } from '../lib/browser-store';
 import { fullPreviewAssessment } from '../lib/demo';
 import { calculate, newAssessment } from '../lib/model';
+import { ageAt } from '../lib/patient';
 
 function memoryStorage() {
   const entries = new Map<string, string>();
@@ -29,6 +30,10 @@ test('Pages preserves full cases across reloads and upserts only the edited ID',
   const original = fullPreviewAssessment();
   original.code = '';
   const first = store.save(original);
+  assert.equal(
+    first.ageMonths,
+    ageAt(first.patient.birthDate, first.visit.date)!.months,
+  );
   assert.match(first.code, /^GC-[A-F0-9]{6}$/);
   assert.ok(Number.isFinite(Date.parse(first.updatedAt)));
   assert.deepEqual(browserAssessmentStore(storage).list(), [first]);

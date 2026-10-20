@@ -13,6 +13,7 @@ import { registerClinicalTools } from '../lib/webmcp';
 import './browser-store.test';
 import './model-version.test';
 import './clinician-profile.test';
+import './development-tasks.test';
 // Existing tests below describe the frozen demonstration model.
 const newAssessment = () => ({
   ...createCurrentAssessment(),

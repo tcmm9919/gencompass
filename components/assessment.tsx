@@ -20,7 +20,7 @@ import { InterfaceRegion } from '@/components/workflow-ui';
 import { Card } from '@astryxdesign/core/Card';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
-import { StatusDot } from '@astryxdesign/core/StatusDot';
+import { RecommendationScale } from '@/components/recommendation-scale';
 import { Banner } from '@astryxdesign/core/Banner';
 import { EmptyState } from '@astryxdesign/core/EmptyState';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
@@ -31,7 +31,6 @@ import {
   calculateAssessment,
   toggleCriterion,
   sources,
-  zoneNames,
   type Assessment,
   type Category,
 } from '@/lib/model';
@@ -77,7 +76,12 @@ export function CriteriaForm({
         const current = record.answers[cat.id];
         const extras = (item: Category['criteria'][number]) => (
           <HStack gap={2} align="center" className="shrink-0">
-            <Tooltip content={item.description} touchTrigger="tap" delay={200}>
+            <Tooltip
+              content={item.description}
+              touchTrigger="tap"
+              focusTrigger="always"
+              delay={200}
+            >
               <IconButton
                 label={'Определение: ' + item.label}
                 icon={<Info className="size-4" />}
@@ -313,36 +317,8 @@ export function ScoreCard({
               <Text color="secondary">из 100</Text>
             )}
           </HStack>
-          {r.hasData && !r.scoringPending && (
-            <HStack gap={2} align="center">
-              <StatusDot
-                variant={riskVariant(r.zone)}
-                label={zoneNames[r.zone]}
-              />
-              <Text weight="medium">{zoneNames[r.zone]}</Text>
-            </HStack>
-          )}
         </VStack>
-        {!r.scoringPending && (
-          <VStack gap={3}>
-            <ProgressBar
-              label="Демонстрационный индекс"
-              isLabelHidden
-              value={r.score ?? 0}
-              max={100}
-              formatValueLabel={() =>
-                r.hasData ? `${r.score} из 100` : 'Нет данных'
-              }
-              variant={r.hasData ? riskVariant(r.zone) : 'neutral'}
-              isDisabled={!r.hasData}
-            />
-            <HStack justify="between" gap={2}>
-              <Text type="supporting">0–24 · Низкий</Text>
-              <Text type="supporting">25–49</Text>
-              <Text type="supporting">50–100 · Высокий</Text>
-            </HStack>
-          </VStack>
-        )}
+        <RecommendationScale recommendation={r.recommendation} />
         {r.scoringPending && (
           <Text color="secondary">
             Числовая модель ожидает клинического утверждения. Признаки,

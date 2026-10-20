@@ -19,7 +19,13 @@ import type { ISODateString } from '@astryxdesign/core/utils';
 import { BirthDateInput } from '@/components/birth-date-input';
 import { InterfaceRegion } from '@/components/workflow-ui';
 import type { Assessment } from '@/lib/model';
-import { ageAt, localDate, type Patient, type Visit } from '@/lib/patient';
+import {
+  ageAt,
+  ageMonthsLabel,
+  localDate,
+  type Patient,
+  type Visit,
+} from '@/lib/patient';
 
 type FormProps = {
   record: Assessment;
@@ -48,7 +54,7 @@ export function PatientContext({
   disabled = false,
 }: FormProps) {
   const { patient, visit } = record;
-  const age = ageAt(patient.birthDate, visit.date || localDate());
+  const age = ageAt(patient.birthDate, visit.date);
   const hasClinicianProfile = Boolean(
     visit.clinician.trim() || visit.specialty.trim() || visit.clinic.trim(),
   );
@@ -56,21 +62,23 @@ export function PatientContext({
   const changePatient = (field: keyof Patient, value: string) => {
     if (disabled) return;
     const next = { ...patient, [field]: value };
-    const nextAge = ageAt(next.birthDate, visit.date || localDate());
+    const nextAge = ageAt(next.birthDate, visit.date);
     onChange({
       ...record,
       patient: next,
       age: nextAge ? String(nextAge.years) : '',
+      ageMonths: nextAge?.months ?? null,
     });
   };
   const changeVisit = (field: keyof Visit, value: string) => {
     if (disabled) return;
     const next = { ...visit, [field]: value };
-    const nextAge = ageAt(patient.birthDate, next.date || localDate());
+    const nextAge = ageAt(patient.birthDate, next.date);
     onChange({
       ...record,
       visit: next,
       age: nextAge ? String(nextAge.years) : '',
+      ageMonths: nextAge?.months ?? null,
     });
   };
 
@@ -112,9 +120,9 @@ export function PatientContext({
                 width="100%"
               />
               <TextInput
-                label="Возраст, полных лет"
+                label="Возраст на дату оценки"
                 labelTooltip="Рассчитан по дате рождения на дату оценки"
-                value={age ? String(age.years) : ''}
+                value={age ? ageMonthsLabel(age.months) : ''}
                 placeholder="По дате рождения"
                 isReadOnly
                 isDisabled={disabled}
